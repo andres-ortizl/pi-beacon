@@ -56,7 +56,7 @@ PanelWindow {
     readonly property var runtimeData: snapshotData.runtime || ({})
     readonly property var todayData: snapshotData.today || ({})
     readonly property var liveSessions: runtimeData.sessions || []
-    readonly property var subagents: runtimeData.subagents || []
+    readonly property var subagents: runtimeData.agents !== undefined ? runtimeData.agents : runtimeData.subagents || []
     readonly property var recentSessions: todayData.recent || []
 
     visible: open

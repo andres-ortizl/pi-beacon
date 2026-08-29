@@ -1,5 +1,107 @@
 {
   "$defs": {
+    "AgentStatus": {
+      "properties": {
+        "agent": {
+          "title": "Agent",
+          "type": "string"
+        },
+        "elapsed": {
+          "default": "",
+          "title": "Elapsed",
+          "type": "string"
+        },
+        "identity": {
+          "title": "Identity",
+          "type": "string"
+        },
+        "instanceId": {
+          "default": "",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "parentPid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parentpid"
+        },
+        "pid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pid"
+        },
+        "processStartTime": {
+          "default": "",
+          "title": "Processstarttime",
+          "type": "string"
+        },
+        "project": {
+          "default": "",
+          "title": "Project",
+          "type": "string"
+        },
+        "runId": {
+          "default": "",
+          "title": "Runid",
+          "type": "string"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "sourceVersion": {
+          "default": 1,
+          "title": "Sourceversion",
+          "type": "integer"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startedat"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "task": {
+          "default": "",
+          "title": "Task",
+          "type": "string"
+        }
+      },
+      "required": [
+        "identity",
+        "source",
+        "agent",
+        "state"
+      ],
+      "title": "AgentStatus",
+      "type": "object"
+    },
     "ContextStats": {
       "properties": {
         "contextWindow": {
@@ -78,6 +180,11 @@
           "title": "Elapsed",
           "type": "string"
         },
+        "instanceId": {
+          "default": "",
+          "title": "Instanceid",
+          "type": "string"
+        },
         "kind": {
           "default": "session",
           "title": "Kind",
@@ -118,6 +225,11 @@
         "pid": {
           "title": "Pid",
           "type": "integer"
+        },
+        "processStartTime": {
+          "default": "",
+          "title": "Processstarttime",
+          "type": "string"
         },
         "project": {
           "title": "Project",
@@ -304,6 +416,13 @@
           "title": "Activecount",
           "type": "integer"
         },
+        "agents": {
+          "items": {
+            "$ref": "#/$defs/AgentStatus"
+          },
+          "title": "Agents",
+          "type": "array"
+        },
         "attention": {
           "default": false,
           "title": "Attention",
@@ -356,13 +475,62 @@
     },
     "SubagentStatus": {
       "properties": {
+        "adapter": {
+          "default": "pi-subagents",
+          "title": "Adapter",
+          "type": "string"
+        },
+        "adapterVersion": {
+          "default": 1,
+          "title": "Adapterversion",
+          "type": "integer"
+        },
         "agent": {
           "title": "Agent",
           "type": "string"
         },
+        "artifactVersion": {
+          "default": 3,
+          "title": "Artifactversion",
+          "type": "integer"
+        },
         "elapsed": {
           "default": "",
           "title": "Elapsed",
+          "type": "string"
+        },
+        "instanceId": {
+          "default": "",
+          "title": "Instanceid",
+          "type": "string"
+        },
+        "parentPid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parentpid"
+        },
+        "pid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pid"
+        },
+        "processStartTime": {
+          "default": "",
+          "title": "Processstarttime",
           "type": "string"
         },
         "runId": {
@@ -387,6 +555,11 @@
         },
         "state": {
           "title": "State",
+          "type": "string"
+        },
+        "stepId": {
+          "default": "",
+          "title": "Stepid",
           "type": "string"
         },
         "task": {

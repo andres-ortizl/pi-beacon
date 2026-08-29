@@ -22,6 +22,7 @@ from pi_beacon.database import upgrade_database
 from pi_beacon.notifier import NotificationEvent, notify
 from pi_beacon.paths import (
     database_path,
+    ensure_runtime_root,
     live_sessions_dir,
     sessions_dir,
     socket_path,
@@ -96,6 +97,7 @@ def serve(
 ) -> None:
     """Run the persistent local API on a private Unix socket."""
     settings = load_settings(config)
+    ensure_runtime_root(settings)
     endpoint = socket_path(settings)
     parent_exists = endpoint.parent.exists()
     endpoint.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -154,7 +156,11 @@ def doctor(
         ("Live bridge", live_sessions_dir(settings), live_sessions_dir(settings).is_dir()),
         ("API socket", socket_path(settings), socket_path(settings).is_socket()),
         ("Pi sessions", sessions_dir(settings), sessions_dir(settings).is_dir()),
-        ("Subagents", subagent_runs_dir(), subagent_runs_dir().is_dir()),
+        (
+            "Subagents",
+            subagent_runs_dir(settings),
+            subagent_runs_dir(settings).is_dir(),
+        ),
         ("SQLite index", database_path(settings), database_path(settings).exists()),
     ]
     table = Table(title="Pi Beacon doctor")

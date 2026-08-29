@@ -16,7 +16,7 @@ When `XDG_RUNTIME_DIR` is unavailable, both the Pi extension and backend use:
 $TMPDIR/pi-runtime-<uid>/pi-beacon/api.sock
 ```
 
-The runtime directory uses mode `0700`. Granian creates the socket with mode `0600`. The service runs one ASGI worker with uvloop so the collector, async database engine, and SSE revisions have one owner.
+Pi Beacon validates that each managed fallback directory is a real directory owned by the current UID, rejects symbolic links or foreign owners, and enforces mode `0700`. Granian creates the socket with mode `0600`. The service runs one ASGI worker with uvloop so the collector, async database engine, and SSE revisions have one owner.
 
 Override the socket with `PI_BEACON_PATHS__SOCKET` or `[paths].socket`.
 
@@ -47,15 +47,15 @@ Startup fails if the initial state cannot be produced. Later refreshes publish a
 
 All data routes share the `/v1` router prefix.
 
-| Route | Result |
-| --- | --- |
-| `GET /healthz` | Process readiness and current revision |
-| `GET /v1/snapshot` | Complete `DashboardSnapshot` |
-| `GET /v1/runtime` | Current `RuntimeStatus` |
-| `GET /v1/waybar` | Current Waybar JSON payload |
-| `GET /v1/events` | Persistent SSE snapshot stream |
+| Route                   | Result                                    |
+| ----------------------- | ----------------------------------------- |
+| `GET /healthz`          | Process readiness and current revision    |
+| `GET /v1/snapshot`      | Complete `DashboardSnapshot`              |
+| `GET /v1/runtime`       | Current `RuntimeStatus`                   |
+| `GET /v1/waybar`        | Current Waybar JSON payload               |
+| `GET /v1/events`        | Persistent SSE snapshot stream            |
 | `GET /v1/events/waybar` | Persistent pre-rendered Waybar SSE stream |
-| `GET /openapi.json` | Generated OpenAPI contract |
+| `GET /openapi.json`     | Generated OpenAPI contract                |
 
 Every `/v1` response includes `X-Pi-Beacon-Revision`. One ASGI middleware adds the header, including to streaming responses.
 

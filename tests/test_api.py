@@ -10,6 +10,7 @@ import pytest
 
 from pi_beacon.api import create_app
 from pi_beacon.config import PathSettings, Settings
+from pi_beacon.runtime import process_start_time
 
 
 @pytest.fixture
@@ -83,6 +84,8 @@ async def test_collector_publishes_a_new_revision_when_live_state_changes(
                 {
                     "version": 1,
                     "pid": os.getpid(),
+                    "instanceId": "event-test-instance",
+                    "processStartTime": process_start_time(os.getpid()),
                     "sessionId": "event-test",
                     "project": "demo",
                     "state": "running",

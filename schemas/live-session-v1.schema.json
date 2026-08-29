@@ -130,6 +130,11 @@
       "title": "Elapsed",
       "type": "string"
     },
+    "instanceId": {
+      "default": "",
+      "title": "Instanceid",
+      "type": "string"
+    },
     "kind": {
       "default": "session",
       "title": "Kind",
@@ -170,6 +175,11 @@
     "pid": {
       "title": "Pid",
       "type": "integer"
+    },
+    "processStartTime": {
+      "default": "",
+      "title": "Processstarttime",
+      "type": "string"
     },
     "project": {
       "title": "Project",

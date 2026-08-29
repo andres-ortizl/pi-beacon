@@ -11,7 +11,7 @@ from watchfiles import awatch
 from pi_beacon.async_indexer import AsyncSessionIndexer
 from pi_beacon.config import Settings
 from pi_beacon.models import DashboardSnapshot, RuntimeStatus, TodayStats
-from pi_beacon.paths import database_path, live_sessions_dir, sessions_dir
+from pi_beacon.paths import database_path, ensure_runtime_root, live_sessions_dir, sessions_dir
 from pi_beacon.service import DashboardService
 
 
@@ -40,6 +40,7 @@ class Collector:
         self.changed = asyncio.Condition()
 
     async def start(self) -> None:
+        await asyncio.to_thread(ensure_runtime_root, self.settings)
         status_dir = live_sessions_dir(self.settings)
         await asyncio.to_thread(status_dir.mkdir, parents=True, exist_ok=True, mode=0o700)
         await asyncio.to_thread(os.chmod, status_dir, 0o700)

@@ -1,17 +1,17 @@
+import { randomUUID } from "node:crypto";
 import {
+  chmodSync,
+  lstatSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
+  readFileSync,
   renameSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import type {
-  ExtensionAPI,
-  ExtensionContext,
-} from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 type SessionState = "idle" | "running" | "waiting";
 
@@ -35,6 +35,8 @@ interface LiveSessionV1 {
   version: 1;
   pid: number;
   parentPid: number;
+  instanceId: string;
+  processStartTime: string;
   sessionId: string;
   sessionFile: string | undefined;
   sessionName: string;
@@ -54,18 +56,49 @@ interface LiveSessionV1 {
   updatedAt: number;
 }
 
-const runtimeRoot =
-  process.env.PI_BEACON_PATHS__RUNTIME_DIR ??
-  join(
-    process.env.XDG_RUNTIME_DIR ??
-      join(tmpdir(), `pi-runtime-${process.getuid?.() ?? "user"}`),
-    "pi-beacon",
-  );
+const currentUid = process.getuid?.();
+const configuredRuntimeRoot = process.env.PI_BEACON_PATHS__RUNTIME_DIR;
+const runtimeBase =
+  process.env.XDG_RUNTIME_DIR ?? join(tmpdir(), `pi-runtime-${currentUid ?? "user"}`);
+const runtimeRoot = configuredRuntimeRoot ?? join(runtimeBase, "pi-beacon");
 const statusDir = join(runtimeRoot, "sessions");
 const statusPath = join(statusDir, `${process.pid}.json`);
+const instanceId = randomUUID();
+
+function ensurePrivateDirectory(path: string): void {
+  if (currentUid === undefined) {
+    throw new Error("Pi Beacon requires a Unix user identity");
+  }
+  mkdirSync(path, { recursive: true, mode: 0o700 });
+  const metadata = lstatSync(path);
+  if (metadata.isSymbolicLink() || !metadata.isDirectory()) {
+    throw new Error(`Pi Beacon runtime path is not a private directory: ${path}`);
+  }
+  if (metadata.uid !== currentUid) {
+    throw new Error(`Pi Beacon runtime path has a foreign owner: ${path}`);
+  }
+  chmodSync(path, 0o700);
+}
+
+function ensureRuntimeDirectories(): void {
+  if (!configuredRuntimeRoot) ensurePrivateDirectory(runtimeBase);
+  ensurePrivateDirectory(runtimeRoot);
+  ensurePrivateDirectory(statusDir);
+}
+
+function processStartTime(pid: number): string {
+  try {
+    const payload = readFileSync(`/proc/${pid}/stat`, "utf8");
+    const fields = payload.slice(payload.lastIndexOf(")") + 2).split(/\s+/);
+    return fields[19] ?? "";
+  } catch {
+    return "";
+  }
+}
+
+const currentProcessStartTime = processStartTime(process.pid);
 const backendExecutable =
-  process.env.PI_BEACON_EXECUTABLE ??
-  join(process.env.HOME ?? "", ".local", "bin", "pi-beacon");
+  process.env.PI_BEACON_EXECUTABLE ?? join(process.env.HOME ?? "", ".local", "bin", "pi-beacon");
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -86,10 +119,8 @@ function emptyUsage(): UsageStats {
 function subagentCost(entry: Record<string, unknown>): number {
   if (entry.type !== "message" || !isRecord(entry.message)) return 0;
   const message = entry.message;
-  if (message.role !== "toolResult" || message.toolName !== "subagent")
-    return 0;
-  if (!isRecord(message.details) || !Array.isArray(message.details.results))
-    return 0;
+  if (message.role !== "toolResult" || message.toolName !== "subagent") return 0;
+  if (!isRecord(message.details) || !Array.isArray(message.details.results)) return 0;
   let total = 0;
   for (const result of message.details.results) {
     if (!isRecord(result) || !isRecord(result.usage)) continue;
@@ -105,10 +136,7 @@ function computeUsage(entries: readonly unknown[]): UsageStats {
     let usage: Record<string, unknown> | undefined;
     if (entry.type === "message" && isRecord(entry.message)) {
       const role = entry.message.role;
-      if (
-        (role === "assistant" || role === "toolResult") &&
-        isRecord(entry.message.usage)
-      ) {
+      if ((role === "assistant" || role === "toolResult") && isRecord(entry.message.usage)) {
         usage = entry.message.usage;
       }
     } else if (
@@ -125,8 +153,7 @@ function computeUsage(entries: readonly unknown[]): UsageStats {
     const input = typeof usage.input === "number" ? usage.input : 0;
     const output = typeof usage.output === "number" ? usage.output : 0;
     const cacheRead = typeof usage.cacheRead === "number" ? usage.cacheRead : 0;
-    const cacheWrite =
-      typeof usage.cacheWrite === "number" ? usage.cacheWrite : 0;
+    const cacheWrite = typeof usage.cacheWrite === "number" ? usage.cacheWrite : 0;
     const totalTokens =
       typeof usage.totalTokens === "number"
         ? usage.totalTokens
@@ -174,16 +201,23 @@ function cleanupStaleStatuses(): void {
     try {
       const payload = JSON.parse(readFileSync(path, "utf8")) as {
         pid?: number;
+        processStartTime?: string;
       };
-      if (!payload.pid || payload.pid === process.pid) continue;
-      process.kill(payload.pid, 0);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "EPERM") continue;
-      try {
-        unlinkSync(path);
-      } catch {
-        // A concurrent Pi process may have replaced or removed the file.
+      if (payload.pid === process.pid) continue;
+      if (
+        payload.pid &&
+        payload.processStartTime &&
+        processStartTime(payload.pid) === payload.processStartTime
+      ) {
+        continue;
       }
+    } catch {
+      // Invalid files are removed below.
+    }
+    try {
+      unlinkSync(path);
+    } catch {
+      // A concurrent Pi process may have replaced or removed the file.
     }
   }
 }
@@ -209,8 +243,7 @@ function derivedTitle(value: string): string {
 
 function entryTimestamp(value: unknown): string | number | null {
   if (!isRecord(value)) return null;
-  return typeof value.timestamp === "string" ||
-    typeof value.timestamp === "number"
+  return typeof value.timestamp === "string" || typeof value.timestamp === "number"
     ? value.timestamp
     : null;
 }
@@ -238,27 +271,16 @@ export default function (pi: ExtensionAPI) {
     const explicitName = (pi.getSessionName() ?? "").trim();
     let firstPrompt = "";
     for (const entry of branch) {
-      if (
-        !isRecord(entry) ||
-        entry.type !== "message" ||
-        !isRecord(entry.message)
-      )
-        continue;
+      if (!isRecord(entry) || entry.type !== "message" || !isRecord(entry.message)) continue;
       if (entry.message.role === "user") {
         firstPrompt = messageText(entry.message.content);
         break;
       }
     }
-    displayName =
-      explicitName || derivedTitle(firstPrompt) || basename(ctx.cwd) || ctx.cwd;
-    titleSource = explicitName
-      ? "explicit"
-      : firstPrompt
-        ? "prompt"
-        : "project";
+    displayName = explicitName || derivedTitle(firstPrompt) || basename(ctx.cwd) || ctx.cwd;
+    titleSource = explicitName ? "explicit" : firstPrompt ? "prompt" : "project";
     sessionId = ctx.sessionManager.getSessionId();
-    sessionStartedAt =
-      entryTimestamp(ctx.sessionManager.getHeader()) ?? sessionStartedAt;
+    sessionStartedAt = entryTimestamp(ctx.sessionManager.getHeader()) ?? sessionStartedAt;
     for (let index = branch.length - 1; index >= 0; index -= 1) {
       const entry = branch[index];
       if (!isRecord(entry) || entry.type !== "message") continue;
@@ -297,6 +319,8 @@ export default function (pi: ExtensionAPI) {
       version: 1,
       pid: process.pid,
       parentPid: process.ppid,
+      instanceId,
+      processStartTime: currentProcessStartTime,
       sessionId,
       sessionFile,
       sessionName: pi.getSessionName() ?? "",
@@ -327,6 +351,7 @@ export default function (pi: ExtensionAPI) {
   }
 
   pi.on("session_start", (_event, ctx) => {
+    ensureRuntimeDirectories();
     cleanupStaleStatuses();
     sessionStartedAt = Date.now();
     state = "idle";
@@ -399,17 +424,11 @@ export default function (pi: ExtensionAPI) {
   pi.on("agent_end", (event) => {
     const failed = event.messages.some(
       (message) =>
-        isRecord(message) &&
-        message.role === "assistant" &&
-        message.stopReason === "error",
+        isRecord(message) && message.role === "assistant" && message.stopReason === "error",
     );
     if (!failed) return;
     runFailed = true;
-    emitNotification(
-      "error",
-      0,
-      "Pi stopped with an error. Open the session for details.",
-    );
+    emitNotification("error", 0, "Pi stopped with an error. Open the session for details.");
   });
 
   pi.on("agent_settled", (_event, ctx) => {

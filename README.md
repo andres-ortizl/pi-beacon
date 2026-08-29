@@ -137,6 +137,7 @@ sound = false
 # runtime_dir = "/run/user/1000/pi-beacon"
 # database = "~/.cache/pi-beacon/sessions.sqlite3"
 # socket = "/run/user/1000/pi-beacon/api.sock"
+# subagent_runs_dir = "/tmp/pi-subagents-uid-1000/async-subagent-runs"
 ```
 
 Environment overrides use the `PI_BEACON_` prefix and `__` for nesting. Example:
@@ -179,7 +180,7 @@ The persistent collector watches the live bridge and Pi session files, coalesces
 
 SQLModel defines the cache tables. SQLAlchemy async and `aiosqlite` provide non-blocking access, while Alembic controls schema migrations. The cache validates inode and cursor fingerprints, recomputes rewritten sessions, removes deleted current-day sessions, and applies bounded retention.
 
-See [docs/api-v1.md](docs/api-v1.md) for the local HTTP and SSE protocol. See [docs/bridge-v1.md](docs/bridge-v1.md) for the producer and snapshot contracts.
+See [docs/api-v1.md](docs/api-v1.md) for the local HTTP and SSE protocol. See [docs/bridge-v1.md](docs/bridge-v1.md) for the producer and snapshot contracts. See [docs/subagent-adapter-v1.md](docs/subagent-adapter-v1.md) for the optional `pi-subagents` compatibility boundary.
 
 ## Development
 
@@ -190,10 +191,14 @@ uv run ruff check .
 uv run ruff format --check .
 uv run ty check
 uv run pytest
+uv run zizmor .github/workflows
+npm run format:check
+npm run lint
+npm run typecheck
 uv build
 ```
 
-Tests enforce at least 85% Python coverage. GitHub Actions runs the same Ruff, ty, pytest, and build gates.
+Tests enforce at least 85% Python coverage. Biome owns JavaScript, TypeScript, JSON, and CSS formatting and linting; Prettier remains only for HTML and workflow YAML. Zizmor audits pinned GitHub Actions. GitHub Actions runs the same quality, security, test, and build gates.
 
 ## Privacy
 

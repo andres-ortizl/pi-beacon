@@ -21,7 +21,10 @@ class DashboardService:
         self.settings = settings
 
     def runtime(self) -> RuntimeStatus:
-        return collect_runtime(live_sessions_dir(self.settings), subagent_runs_dir())
+        return collect_runtime(
+            live_sessions_dir(self.settings),
+            subagent_runs_dir(self.settings),
+        )
 
     def snapshot(self) -> DashboardSnapshot:
         runtime = self.runtime()
@@ -51,7 +54,7 @@ class DashboardService:
             tooltip.append(f"{session.project} • {session.state.value}{elapsed}")
             if session.detail or session.model:
                 tooltip.append(f"  {(session.detail or session.model)[:90]}")
-        for agent in runtime.subagents[:6]:
+        for agent in (runtime.agents or runtime.subagents)[:6]:
             elapsed = f" • {agent.elapsed}" if agent.elapsed else ""
             tooltip.append(f"↳ {agent.agent} • {agent.state}{elapsed}")
         tooltip.append("Click for dashboard • Ctrl+Alt+F in Pi for FleetView")

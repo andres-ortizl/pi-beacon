@@ -52,6 +52,8 @@ class LiveSession(BridgeModel):
     version: int = 1
     pid: int
     parent_pid: int | None = None
+    instance_id: str = ""
+    process_start_time: str = ""
     session_id: str
     session_file: Path | None = None
     session_name: str = ""
@@ -74,18 +76,44 @@ class LiveSession(BridgeModel):
 
 
 class SubagentStatus(BridgeModel):
+    adapter: str = "pi-subagents"
+    adapter_version: int = 1
+    artifact_version: int = 3
     agent: str
     state: str
     task: str = ""
     elapsed: str = ""
     started_at: int | str | None = None
     run_id: str = ""
+    step_id: str = ""
+    pid: int | None = None
+    parent_pid: int | None = None
+    instance_id: str = ""
+    process_start_time: str = ""
+
+
+class AgentStatus(BridgeModel):
+    identity: str
+    source: str
+    source_version: int = 1
+    agent: str
+    state: str
+    task: str = ""
+    elapsed: str = ""
+    started_at: int | str | None = None
+    run_id: str = ""
+    pid: int | None = None
+    parent_pid: int | None = None
+    instance_id: str = ""
+    process_start_time: str = ""
+    project: str = ""
 
 
 class RuntimeStatus(BridgeModel):
     sessions: list[LiveSession] = Field(default_factory=list)
     child_sessions: list[LiveSession] = Field(default_factory=list)
     subagents: list[SubagentStatus] = Field(default_factory=list)
+    agents: list[AgentStatus] = Field(default_factory=list)
     session_count: int = 0
     subagent_count: int = 0
     active_count: int = 0

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import stat
 import sys
 from pathlib import Path
 from typing import TypedDict
@@ -11,7 +12,8 @@ import pytest
 from typer.testing import CliRunner
 
 from pi_beacon.cli import app
-from pi_beacon.config import load_settings
+from pi_beacon.config import PathSettings, Settings, load_settings
+from pi_beacon.paths import ensure_runtime_root, live_sessions_dir
 
 runner = CliRunner()
 
@@ -42,6 +44,39 @@ sessions_dir = "/tmp/sessions"
     assert settings.recent_session_limit == 2
     assert not settings.display.show_cost
     assert settings.paths.sessions_dir == Path("/tmp/environment-sessions")
+
+
+def test_runtime_root_secures_a_normal_directory(tmp_path: Path) -> None:
+    runtime = tmp_path / "runtime"
+    runtime.mkdir(mode=0o755)
+    settings = Settings(paths=PathSettings(runtime_dir=runtime))
+
+    ensure_runtime_root(settings)
+
+    assert stat.S_IMODE(runtime.stat().st_mode) == 0o700
+
+
+def test_runtime_root_rejects_a_symbolic_link(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    target.mkdir()
+    linked = tmp_path / "runtime"
+    linked.symlink_to(target, target_is_directory=True)
+    settings = Settings(paths=PathSettings(runtime_dir=linked))
+
+    with pytest.raises(RuntimeError, match="symbolic link"):
+        ensure_runtime_root(settings)
+
+
+def test_live_sessions_directory_rejects_a_symbolic_link(tmp_path: Path) -> None:
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    target = tmp_path / "target"
+    target.mkdir()
+    (runtime / "sessions").symlink_to(target, target_is_directory=True)
+    settings = Settings(paths=PathSettings(runtime_dir=runtime))
+
+    with pytest.raises(RuntimeError, match="symbolic link"):
+        live_sessions_dir(settings)
 
 
 def test_waybar_and_snapshot_commands(tmp_path: Path, monkeypatch) -> None:

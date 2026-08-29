@@ -12,9 +12,14 @@ repos:
         entry: uv run ty check
         language: system
         pass_filenames: false
-      - id: prettier
-        name: prettier check
+      - id: biome-prettier
+        name: Biome and Prettier check
         entry: npm run format:check
+        language: system
+        pass_filenames: false
+      - id: zizmor
+        name: GitHub Actions security check
+        entry: uv run zizmor .github/workflows
         language: system
         pass_filenames: false
       - id: typescript

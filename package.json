@@ -4,8 +4,9 @@
   "description": "Live Pi session and subagent observability for Linux desktops",
   "type": "module",
   "scripts": {
-    "format": "prettier --write \"extension/**/*.ts\" \"site/**/*.{html,css,js,json}\" \"*.json\" \".github/**/*.yml\"",
-    "format:check": "prettier --check \"extension/**/*.ts\" \"site/**/*.{html,css,js,json}\" \"*.json\" \".github/**/*.yml\"",
+    "format": "biome check --write . && prettier --write \"site/**/*.html\" \"*.yaml\" \".github/**/*.yml\"",
+    "format:check": "biome check . && prettier --check \"site/**/*.html\" \"*.yaml\" \".github/**/*.yml\"",
+    "lint": "biome lint .",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -43,6 +44,7 @@
     "image": "https://raw.githubusercontent.com/andres-ortizl/pi-beacon/main/docs/images/pi-beacon-dashboard.png"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.11",
     "@earendil-works/pi-coding-agent": "^0.84.4",
     "@types/node": "^26.4.0",
     "prettier": "^3.9.6",

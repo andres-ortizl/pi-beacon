@@ -20,6 +20,7 @@ class PathSettings(BaseModel):
     runtime_dir: Path | None = None
     database: Path | None = None
     socket: Path | None = None
+    subagent_runs_dir: Path | None = None
 
 
 class ServiceSettings(BaseModel):

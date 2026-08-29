@@ -29,3 +29,4 @@ sound = false
 # runtime_dir = "/run/user/1000/pi-beacon"
 # database = "~/.cache/pi-beacon/sessions.sqlite3"
 # socket = "/run/user/1000/pi-beacon/api.sock"
+# subagent_runs_dir = "/tmp/pi-subagents-uid-1000/async-subagent-runs"
