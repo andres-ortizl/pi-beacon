@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pi Beacon | Live Pi session dashboard for Linux</title>
+    <meta
+      name="description"
+      content="Monitor Pi sessions, subagents, context, tokens and daily cost from Waybar and Quickshell. Open source, local and built for Linux."
+    />
+    <meta name="theme-color" content="#000000" />
+    <link rel="canonical" href="https://andres-ortizl.github.io/pi-beacon/" />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link
+      rel="preload"
+      href="assets/fonts/Geist-Variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <script>
+      document.documentElement.classList.add("js");
+      if (new URLSearchParams(location.search).has("static"))
+        document.documentElement.classList.add("static");
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="See every Pi session at a glance" />
+    <meta
+      property="og:description"
+      content="Live Pi sessions, subagents and daily usage in Waybar and Quickshell."
+    />
+    <meta
+      property="og:url"
+      content="https://andres-ortizl.github.io/pi-beacon/"
+    />
+    <meta
+      property="og:image"
+      content="https://andres-ortizl.github.io/pi-beacon/assets/og.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Pi Beacon",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux",
+        "isAccessibleForFree": true,
+        "license": "https://opensource.org/license/mit",
+        "url": "https://andres-ortizl.github.io/pi-beacon/",
+        "codeRepository": "https://github.com/andres-ortizl/pi-beacon"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does Pi Beacon upload session data?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Pi Beacon reads local Pi files and runtime state only."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it reread my complete history?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Only during the initial index. Later updates resume from the last complete byte offset."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does it show the main Pi session?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. The extension publishes every open main session, including idle, running and waiting states."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Do I need Quickshell?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. The versioned JSON API and Waybar payload work independently."
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <nav class="nav-shell" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="Pi Beacon home"
+        ><span aria-hidden="true">π</span> Beacon</a
+      >
+      <a class="button button-small" href="#install">Install Pi Beacon</a>
+    </nav>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="hero-copy hero-enter">
+          <p class="eyebrow">
+            <span class="live-dot" aria-hidden="true"></span> Live observability
+            for Pi
+          </p>
+          <h1>See every Pi session<br />at a glance.</h1>
+          <p class="hero-subtitle">
+            Pi Beacon brings main sessions, subagents, context, tokens and daily
+            cost into Waybar and Quickshell. Everything stays on your machine.
+          </p>
+          <a class="button" href="#install">Install Pi Beacon</a>
+          <p class="proof-line">Open source. Local only. No telemetry.</p>
+        </div>
+        <div
+          class="signal-orbital hero-enter"
+          role="img"
+          aria-label="Abstract orbital instrument with three moving signals around a central Pi mark"
+        >
+          <svg viewBox="0 0 560 560" aria-hidden="true">
+            <defs>
+              <linearGradient id="orbital-signal" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#b8ff78" stop-opacity="0" />
+                <stop offset="0.52" stop-color="#b8ff78" />
+                <stop offset="1" stop-color="#ffffff" />
+              </linearGradient>
+              <filter
+                id="orbital-glow"
+                x="-100%"
+                y="-100%"
+                width="300%"
+                height="300%"
+              >
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <circle
+              class="orbital-boundary"
+              cx="280"
+              cy="280"
+              r="246"
+              pathLength="100"
+            />
+            <circle
+              class="orbital-ticks"
+              cx="280"
+              cy="280"
+              r="224"
+              pathLength="100"
+            />
+            <circle class="orbital-ring" cx="280" cy="280" r="186" />
+            <circle
+              class="orbital-ring orbital-ring-inner"
+              cx="280"
+              cy="280"
+              r="124"
+            />
+
+            <g class="orbital-rotor orbital-rotor-outer">
+              <circle
+                class="orbital-sweep"
+                cx="280"
+                cy="280"
+                r="224"
+                pathLength="100"
+              />
+              <circle class="orbital-satellite" cx="280" cy="56" r="6" />
+            </g>
+            <g class="orbital-rotor orbital-rotor-middle">
+              <circle
+                class="orbital-arc"
+                cx="280"
+                cy="280"
+                r="186"
+                pathLength="100"
+              />
+              <circle class="orbital-node" cx="466" cy="280" r="4" />
+            </g>
+            <g class="orbital-rotor orbital-rotor-inner">
+              <circle
+                class="orbital-arc orbital-arc-inner"
+                cx="280"
+                cy="280"
+                r="124"
+                pathLength="100"
+              />
+              <circle class="orbital-node" cx="280" cy="156" r="3" />
+            </g>
+
+            <circle
+              class="orbital-pulse orbital-pulse-one"
+              cx="280"
+              cy="280"
+              r="56"
+            />
+            <circle
+              class="orbital-pulse orbital-pulse-two"
+              cx="280"
+              cy="280"
+              r="56"
+            />
+            <path
+              class="orbital-crosshair"
+              d="M280 202v28M280 330v28M202 280h28M330 280h28"
+            />
+            <circle class="orbital-core" cx="280" cy="280" r="48" />
+            <circle
+              class="orbital-core-line"
+              cx="280"
+              cy="280"
+              r="38"
+              pathLength="100"
+            />
+            <text class="orbital-glyph" x="280" y="296" text-anchor="middle">
+              π
+            </text>
+
+            <circle class="orbital-fixed-node" cx="70" cy="280" r="3" />
+            <circle class="orbital-fixed-node" cx="406" cy="98" r="3" />
+            <circle class="orbital-fixed-node" cx="414" cy="452" r="3" />
+          </svg>
+        </div>
+      </section>
+
+      <section
+        class="product-preview reveal"
+        aria-label="Pi Beacon dashboard preview"
+      >
+        <figure class="dashboard-proof">
+          <div class="dashboard-border">
+            <div class="dashboard-image-mask">
+              <img
+                src="assets/dashboard.png"
+                alt="Pi Beacon Quickshell dashboard showing one live Pi session, one reviewer subagent and daily usage"
+              />
+            </div>
+          </div>
+          <figcaption>One view for sessions, subagents and usage.</figcaption>
+        </figure>
+      </section>
+
+      <section class="section reveal" aria-labelledby="benefits-title">
+        <div class="section-heading">
+          <p class="eyebrow">Stay oriented</p>
+          <h2 id="benefits-title">
+            Know what Pi is doing without searching through terminal tabs.
+          </h2>
+        </div>
+        <div class="benefit-grid">
+          <article class="card">
+            <p class="card-number">01</p>
+            <h3>Keep every session visible</h3>
+            <p>
+              See idle, running and waiting sessions from one compact desktop
+              surface.
+            </p>
+          </article>
+          <article class="card">
+            <p class="card-number">02</p>
+            <h3>Catch agents that need you</h3>
+            <p>
+              Surface waiting prompts and child attention states before
+              background work disappears.
+            </p>
+          </article>
+          <article class="card">
+            <p class="card-number">03</p>
+            <h3>Read Pi’s real numbers</h3>
+            <p>
+              Use live context, token and cost values directly from Pi’s in
+              process state.
+            </p>
+          </article>
+          <article class="card">
+            <p class="card-number">04</p>
+            <h3>Bring your own interface</h3>
+            <p>
+              Consume the public snapshot contract or reshape the maintained
+              Quickshell frontend.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="tagline-section" aria-label="Core benefit">
+        <p class="tagline" data-word-reveal>
+          Your agents should not disappear<br />inside terminal tabs.<br />Keep
+          every Pi session in sight.
+        </p>
+      </section>
+
+      <section class="section reveal" aria-labelledby="how-title">
+        <div class="section-heading">
+          <p class="eyebrow">Three clear layers</p>
+          <h2 id="how-title">
+            A small driver, a public contract and a frontend you control.
+          </h2>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <p class="step-label">Step 1</p>
+            <h3>Pi publishes live state</h3>
+            <p>
+              The TypeScript extension writes atomic local snapshots from Pi
+              lifecycle events.
+            </p>
+          </article>
+          <article class="step">
+            <p class="step-label">Step 2</p>
+            <h3>Python indexes history</h3>
+            <p>
+              Pydantic validates the contract while SQLModel resumes each JSONL
+              file from its saved offset.
+            </p>
+          </article>
+          <article class="step">
+            <p class="step-label">Step 3</p>
+            <h3>Your desktop renders it</h3>
+            <p>
+              Waybar shows the signal. Quickshell opens the full view. Your own
+              client can use the same JSON.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section
+        class="section proof-section reveal"
+        aria-labelledby="proof-title"
+      >
+        <div class="section-heading">
+          <p class="eyebrow">Built in the open</p>
+          <h2 id="proof-title">
+            A typed local bridge with visible engineering boundaries.
+          </h2>
+        </div>
+        <div class="proof-grid">
+          <div><strong>47</strong><span>automated tests</span></div>
+          <div><strong>85.35%</strong><span>Python coverage</span></div>
+          <div><strong>0</strong><span>TCP listeners</span></div>
+          <div><strong>v1</strong><span>documented contract</span></div>
+        </div>
+        <pre
+          class="architecture"
+          aria-label="Pi Beacon architecture"
+        ><code>Pi extension  →  live bridge
+Pi JSONL      →  async SQLite
+local SSE     →  any frontend</code></pre>
+      </section>
+
+      <section
+        class="section install-section reveal"
+        id="install"
+        aria-labelledby="install-title"
+      >
+        <div class="section-heading">
+          <p class="eyebrow">Free and local</p>
+          <h2 id="install-title">
+            Install the driver. Start the service. Register the Pi extension.
+          </h2>
+          <p>
+            Three explicit steps. No bootstrap script and no hidden system
+            changes.
+          </p>
+        </div>
+        <div class="command-list">
+          <div class="command-card">
+            <span>1. Install the Python driver</span>
+            <code>uv tool install pi-beacon</code>
+            <button
+              class="copy-button"
+              type="button"
+              data-copy="uv tool install pi-beacon"
+            >
+              Copy
+            </button>
+          </div>
+          <div class="command-card">
+            <span>2. Start the local service</span>
+            <code
+              >pi-beacon install-systemd &amp;&amp; systemctl --user
+              daemon-reload &amp;&amp; systemctl --user enable --now
+              pi-beacon</code
+            >
+            <button
+              class="copy-button"
+              type="button"
+              data-copy="pi-beacon install-systemd &amp;&amp; systemctl --user daemon-reload &amp;&amp; systemctl --user enable --now pi-beacon.service"
+            >
+              Copy
+            </button>
+          </div>
+          <div class="command-card">
+            <span>3. Register the Pi extension</span>
+            <code>pi install npm:pi-beacon</code>
+            <button
+              class="copy-button"
+              type="button"
+              data-copy="pi install npm:pi-beacon"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+        <p class="install-note">
+          Free software under the MIT license. Remove it at any time with the
+          matching systemd, uv and Pi uninstall commands.
+        </p>
+      </section>
+
+      <section class="section reveal" aria-labelledby="faq-title">
+        <div class="section-heading">
+          <p class="eyebrow">Questions answered</p>
+          <h2 id="faq-title">
+            What stays local, what gets indexed and what you can replace.
+          </h2>
+        </div>
+        <div class="faq-list">
+          <details>
+            <summary>Does Pi Beacon upload session data?</summary>
+            <p>
+              No. It reads local Pi files and runtime state. It has no
+              telemetry, opens no TCP port and serves only a private Unix
+              socket.
+            </p>
+          </details>
+          <details>
+            <summary>Does it reread my complete history?</summary>
+            <p>
+              The historical cache watches changes and validates the saved byte
+              offset. Set history_enabled to false for live-only operation.
+            </p>
+          </details>
+          <details>
+            <summary>Does it show the main Pi session?</summary>
+            <p>
+              Yes. The extension publishes each open session with its state,
+              model, context and usage.
+            </p>
+          </details>
+          <details>
+            <summary>Does it support Pi subagents?</summary>
+            <p>
+              Yes. It reads the documented lifecycle artifacts created by pi
+              subagents.
+            </p>
+          </details>
+          <details>
+            <summary>Can it notify me when Pi finishes?</summary>
+            <p>
+              Yes. Freedesktop notifications are enabled by default. The bundled
+              completion sound is optional.
+            </p>
+          </details>
+          <details>
+            <summary>Do I need Quickshell?</summary>
+            <p>
+              No. The JSON snapshot and Waybar output work without Quickshell.
+            </p>
+          </details>
+          <details>
+            <summary>Can I replace the default design?</summary>
+            <p>
+              Yes. The driver knows nothing about the frontend. Use the snapshot
+              API, provide another theme or copy and reshape the QML component.
+            </p>
+          </details>
+          <details>
+            <summary>Which platforms are supported?</summary>
+            <p>
+              Version 0.1 targets Linux desktops. The Python snapshot contract
+              remains independent from Waybar and Quickshell.
+            </p>
+          </details>
+          <details>
+            <summary>How do I remove it?</summary>
+            <p>
+              Remove the Pi package, uninstall the uv tool and delete the
+              optional local cache.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="final-cta reveal" aria-labelledby="final-title">
+        <p class="eyebrow">Ready when Pi is</p>
+        <h2 id="final-title">Keep every Pi session in sight.</h2>
+        <a class="button" href="#install">Install Pi Beacon</a>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand" href="#top"><span aria-hidden="true">π</span> Beacon</a>
+      <div class="footer-links">
+        <a href="https://github.com/andres-ortizl/pi-beacon">GitHub</a>
+        <a href="changelog.html">Changelog</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+      </div>
+      <p>MIT licensed. Built for Pi users on Linux.</p>
+    </footer>
+
+    <script src="main.js" defer></script>
+  </body>
+</html>

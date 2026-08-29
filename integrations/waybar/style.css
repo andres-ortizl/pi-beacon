@@ -1,0 +1,17 @@
+#custom-pi-beacon {
+  border-radius: 999px;
+  padding: 0 7px;
+}
+
+#custom-pi-beacon.idle {
+  color: @overlay1;
+}
+
+#custom-pi-beacon.active {
+  color: @green;
+}
+
+#custom-pi-beacon.attention {
+  color: @yellow;
+  background-color: alpha(@yellow, 0.16);
+}

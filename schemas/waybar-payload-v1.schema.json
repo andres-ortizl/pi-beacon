@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "alt": {
+      "default": "pi-beacon",
+      "title": "Alt",
+      "type": "string"
+    },
+    "class": {
+      "title": "Class",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "tooltip": {
+      "title": "Tooltip",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "class",
+    "tooltip"
+  ],
+  "title": "WaybarPayload",
+  "type": "object"
+}

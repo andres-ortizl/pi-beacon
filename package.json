@@ -1,0 +1,51 @@
+{
+  "name": "pi-beacon",
+  "version": "0.1.0",
+  "description": "Live Pi session and subagent observability for Linux desktops",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write \"extension/**/*.ts\" \"site/**/*.{html,css,js,json}\" \"*.json\" \".github/**/*.yml\"",
+    "format:check": "prettier --check \"extension/**/*.ts\" \"site/**/*.{html,css,js,json}\" \"*.json\" \".github/**/*.yml\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "observability",
+    "quickshell",
+    "waybar"
+  ],
+  "author": "Andres Ortiz",
+  "license": "MIT",
+  "homepage": "https://andres-ortizl.github.io/pi-beacon/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andres-ortizl/pi-beacon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andres-ortizl/pi-beacon/issues"
+  },
+  "files": [
+    "extension/index.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "pi": {
+    "extensions": [
+      "./extension/index.ts"
+    ],
+    "image": "https://raw.githubusercontent.com/andres-ortizl/pi-beacon/main/docs/images/pi-beacon-dashboard.png"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.84.4",
+    "@types/node": "^26.4.0",
+    "prettier": "^3.9.6",
+    "typescript": "^7.0.2"
+  }
+}

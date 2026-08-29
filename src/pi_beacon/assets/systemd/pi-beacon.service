@@ -1,0 +1,19 @@
+[Unit]
+Description=Pi Beacon local observability API
+Documentation=https://github.com/andres-ortizl/pi-beacon
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/pi-beacon serve
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=true
+LockPersonality=true
+PrivateDevices=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=default.target

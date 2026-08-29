@@ -1,0 +1,75 @@
+[project]
+name = "pi-beacon"
+version = "0.1.0"
+description = "Live Pi session and subagent observability for Linux desktops"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Andres Ortiz", email = "16100350+andres-ortizl@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+keywords = ["pi", "coding-agent", "quickshell", "waybar", "observability"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+dependencies = [
+    "aiosqlite>=0.22.1",
+    "alembic>=1.19.1",
+    "fastapi>=0.141.1",
+    "granian[uvloop]>=2.8.2",
+    "platformdirs>=4.11.5",
+    "pydantic>=2",
+    "pydantic-settings>=2.15.0",
+    "sqlmodel>=0.0.42",
+    "typer>=0.27.2",
+    "watchfiles>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/andres-ortizl/pi-beacon"
+Repository = "https://github.com/andres-ortizl/pi-beacon"
+Issues = "https://github.com/andres-ortizl/pi-beacon/issues"
+
+[project.scripts]
+pi-beacon = "pi_beacon.cli:app"
+pi-beacon-stream = "pi_beacon.client:main"
+
+[build-system]
+requires = ["uv_build>=0.9.7,<0.10.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.5",
+    "ty>=0.0.75",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --strict-config --cov=pi_beacon --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+omit = ["src/pi_beacon/migrations/*"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true

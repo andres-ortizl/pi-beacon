@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Changelog | Pi Beacon</title>
+    <meta
+      name="description"
+      content="Pi Beacon releases, compatibility notes and migrations."
+    />
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <main class="legal-page changelog" id="main">
+      <a class="brand" href="index.html"
+        ><span aria-hidden="true">π</span> Beacon</a
+      >
+      <p class="eyebrow">Product history</p>
+      <h1>Changelog</h1>
+      <article class="release-card">
+        <header>
+          <h2>Version 0.1.0</h2>
+          <p>Release candidate</p>
+        </header>
+        <h3>Added</h3>
+        <ul>
+          <li>Live state for main Pi sessions and Pi subagents.</li>
+          <li>
+            Deterministic names from explicit names, first prompts or project
+            directories.
+          </li>
+          <li>
+            Session path, start time, last message time, model, thinking,
+            context and usage metadata.
+          </li>
+          <li>
+            Persistent FastAPI and Granian service with uvloop, private Unix
+            socket transport and SSE updates.
+          </li>
+          <li>
+            Async SQLModel and SQLite caching with Alembic migrations, rewrite
+            detection and bounded retention.
+          </li>
+          <li>
+            Versioned JSON Schema contracts for the live bridge, dashboard and
+            Waybar.
+          </li>
+          <li>Waybar status with mathematical session count notation.</li>
+          <li>
+            Configurable Quickshell dashboard with an overridable Zen theme.
+          </li>
+          <li>
+            Freedesktop completion, waiting and error notifications with an
+            optional bundled sound.
+          </li>
+          <li>
+            Static GitHub Pages landing, privacy page, terms and custom 404.
+          </li>
+        </ul>
+      </article>
+      <a class="button" href="index.html">Return to Pi Beacon</a>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,505 @@
+{
+  "$defs": {
+    "ContextStats": {
+      "properties": {
+        "contextWindow": {
+          "title": "Contextwindow",
+          "type": "integer"
+        },
+        "percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Percent"
+        },
+        "tokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tokens"
+        }
+      },
+      "required": [
+        "contextWindow"
+      ],
+      "title": "ContextStats",
+      "type": "object"
+    },
+    "LiveSession": {
+      "properties": {
+        "context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextStats"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cwd": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cwd"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "displayName": {
+          "default": "",
+          "title": "Displayname",
+          "type": "string"
+        },
+        "elapsed": {
+          "default": "",
+          "title": "Elapsed",
+          "type": "string"
+        },
+        "kind": {
+          "default": "session",
+          "title": "Kind",
+          "type": "string"
+        },
+        "lastMessageAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lastmessageat"
+        },
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "parentPid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parentpid"
+        },
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "project": {
+          "title": "Project",
+          "type": "string"
+        },
+        "prompt": {
+          "default": "",
+          "title": "Prompt",
+          "type": "string"
+        },
+        "sessionFile": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sessionfile"
+        },
+        "sessionId": {
+          "title": "Sessionid",
+          "type": "string"
+        },
+        "sessionName": {
+          "default": "",
+          "title": "Sessionname",
+          "type": "string"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startedat"
+        },
+        "state": {
+          "$ref": "#/$defs/SessionState",
+          "default": "open"
+        },
+        "thinking": {
+          "default": "",
+          "title": "Thinking",
+          "type": "string"
+        },
+        "titleSource": {
+          "default": "project",
+          "title": "Titlesource",
+          "type": "string"
+        },
+        "updatedAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updatedat"
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageStats"
+        },
+        "version": {
+          "default": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "pid",
+        "sessionId",
+        "project"
+      ],
+      "title": "LiveSession",
+      "type": "object"
+    },
+    "RecentSession": {
+      "properties": {
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "cwd": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cwd"
+        },
+        "durationSeconds": {
+          "default": 0,
+          "title": "Durationseconds",
+          "type": "integer"
+        },
+        "lastActivity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lastactivity"
+        },
+        "messages": {
+          "default": 0,
+          "title": "Messages",
+          "type": "integer"
+        },
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "project": {
+          "title": "Project",
+          "type": "string"
+        },
+        "sessionFile": {
+          "format": "path",
+          "title": "Sessionfile",
+          "type": "string"
+        },
+        "sessionId": {
+          "title": "Sessionid",
+          "type": "string"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startedat"
+        },
+        "tokens": {
+          "default": 0,
+          "title": "Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sessionId",
+        "sessionFile",
+        "project"
+      ],
+      "title": "RecentSession",
+      "type": "object"
+    },
+    "RuntimeStatus": {
+      "properties": {
+        "activeCount": {
+          "default": 0,
+          "title": "Activecount",
+          "type": "integer"
+        },
+        "attention": {
+          "default": false,
+          "title": "Attention",
+          "type": "boolean"
+        },
+        "childSessions": {
+          "items": {
+            "$ref": "#/$defs/LiveSession"
+          },
+          "title": "Childsessions",
+          "type": "array"
+        },
+        "sessionCount": {
+          "default": 0,
+          "title": "Sessioncount",
+          "type": "integer"
+        },
+        "sessions": {
+          "items": {
+            "$ref": "#/$defs/LiveSession"
+          },
+          "title": "Sessions",
+          "type": "array"
+        },
+        "subagentCount": {
+          "default": 0,
+          "title": "Subagentcount",
+          "type": "integer"
+        },
+        "subagents": {
+          "items": {
+            "$ref": "#/$defs/SubagentStatus"
+          },
+          "title": "Subagents",
+          "type": "array"
+        }
+      },
+      "title": "RuntimeStatus",
+      "type": "object"
+    },
+    "SessionState": {
+      "enum": [
+        "open",
+        "idle",
+        "running",
+        "waiting"
+      ],
+      "title": "SessionState",
+      "type": "string"
+    },
+    "SubagentStatus": {
+      "properties": {
+        "agent": {
+          "title": "Agent",
+          "type": "string"
+        },
+        "elapsed": {
+          "default": "",
+          "title": "Elapsed",
+          "type": "string"
+        },
+        "runId": {
+          "default": "",
+          "title": "Runid",
+          "type": "string"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startedat"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "task": {
+          "default": "",
+          "title": "Task",
+          "type": "string"
+        }
+      },
+      "required": [
+        "agent",
+        "state"
+      ],
+      "title": "SubagentStatus",
+      "type": "object"
+    },
+    "TodayStats": {
+      "properties": {
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "messages": {
+          "default": 0,
+          "title": "Messages",
+          "type": "integer"
+        },
+        "recent": {
+          "items": {
+            "$ref": "#/$defs/RecentSession"
+          },
+          "title": "Recent",
+          "type": "array"
+        },
+        "sessions": {
+          "default": 0,
+          "title": "Sessions",
+          "type": "integer"
+        },
+        "tokens": {
+          "default": 0,
+          "title": "Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "TodayStats",
+      "type": "object"
+    },
+    "UsageStats": {
+      "properties": {
+        "cacheRead": {
+          "default": 0,
+          "title": "Cacheread",
+          "type": "integer"
+        },
+        "cacheWrite": {
+          "default": 0,
+          "title": "Cachewrite",
+          "type": "integer"
+        },
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "input": {
+          "default": 0,
+          "title": "Input",
+          "type": "integer"
+        },
+        "output": {
+          "default": 0,
+          "title": "Output",
+          "type": "integer"
+        },
+        "subagentCost": {
+          "default": 0,
+          "title": "Subagentcost",
+          "type": "number"
+        },
+        "totalTokens": {
+          "default": 0,
+          "title": "Totaltokens",
+          "type": "integer"
+        }
+      },
+      "title": "UsageStats",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "generatedAt": {
+      "title": "Generatedat",
+      "type": "string"
+    },
+    "runtime": {
+      "$ref": "#/$defs/RuntimeStatus"
+    },
+    "today": {
+      "$ref": "#/$defs/TodayStats"
+    },
+    "version": {
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "generatedAt",
+    "runtime",
+    "today"
+  ],
+  "title": "DashboardSnapshot",
+  "type": "object"
+}
