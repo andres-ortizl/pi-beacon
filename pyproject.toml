@@ -1,6 +1,6 @@
 [project]
 name = "pi-beacon"
-version = "0.1.0"
+version = "1.0.0"
 description = "Live Pi session and subagent observability for Linux desktops"
 readme = "README.md"
 license = "MIT"
@@ -10,7 +10,7 @@ authors = [
 requires-python = ">=3.12"
 keywords = ["pi", "coding-agent", "quickshell", "waybar", "observability"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",

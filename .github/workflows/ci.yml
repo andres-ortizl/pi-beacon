@@ -9,6 +9,9 @@ permissions:
 
 jobs:
   quality:
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -27,7 +30,11 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run ty check
-      - run: uv run pytest
+      - run: uv run pytest --cov-report=xml
+      - if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
+        with:
+          use_oidc: true
       - run: uv build
 
   extension:

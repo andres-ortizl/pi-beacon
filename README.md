@@ -1,5 +1,11 @@
 # Pi Beacon
 
+[![CI](https://github.com/andres-ortizl/pi-beacon/actions/workflows/ci.yml/badge.svg)](https://github.com/andres-ortizl/pi-beacon/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/andres-ortizl/pi-beacon/graph/badge.svg)](https://codecov.io/gh/andres-ortizl/pi-beacon)
+[![PyPI](https://img.shields.io/pypi/v/pi-beacon.svg)](https://pypi.org/project/pi-beacon/)
+[![npm](https://img.shields.io/npm/v/pi-beacon.svg)](https://www.npmjs.com/package/pi-beacon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Live Pi session and subagent observability for Linux desktops.
 
 Pi Beacon turns Pi's in-process state, session logs, and `pi-subagents` lifecycle artifacts into one versioned local snapshot. It ships a Waybar indicator and a configurable Quickshell dashboard.

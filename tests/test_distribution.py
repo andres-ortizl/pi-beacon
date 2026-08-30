@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tomllib
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -18,6 +19,18 @@ class AssetParser(HTMLParser):
         attribute = "href" if tag in {"a", "link"} else "src" if tag in {"img", "script"} else None
         if attribute and values.get(attribute):
             self.references.append(values[attribute] or "")
+
+
+def test_release_versions_are_consistent() -> None:
+    with (ROOT / "pyproject.toml").open("rb") as project_file:
+        version = tomllib.load(project_file)["project"]["version"]
+    package_version = json.loads((ROOT / "package.json").read_text())["version"]
+
+    assert version == "1.0.0"
+    assert package_version == version
+    assert f'DEFAULT_VERSION="v{version}"' in (ROOT / "install.sh").read_text()
+    assert f'version="{version}"' in (ROOT / "src" / "pi_beacon" / "api.py").read_text()
+    assert f"Version {version}" in (SITE / "changelog.html").read_text()
 
 
 def test_pi_package_metadata() -> None:
