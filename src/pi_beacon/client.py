@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import http.client
+import json
 import os
 import socket
 import sys
@@ -19,6 +20,18 @@ from typing import Any
 class OutputFormat(StrEnum):
     SNAPSHOT = "snapshot"
     WAYBAR = "waybar"
+
+
+WAYBAR_OFFLINE_PAYLOAD = json.dumps(
+    {
+        "text": "π off",
+        "alt": "pi-beacon-offline",
+        "class": "offline",
+        "tooltip": "Pi Beacon is stopped\nRight-click for service controls",
+    },
+    ensure_ascii=False,
+    separators=(",", ":"),
+)
 
 
 @dataclass(frozen=True)
@@ -157,12 +170,21 @@ def read_events(
 def subscribe(endpoint: Path, output_format: OutputFormat, once: bool = False) -> None:
     last_event_id = ""
     reconnect_delay = 0.25
+    offline_emitted = False
+
+    def emit_offline() -> None:
+        nonlocal offline_emitted
+        if output_format is OutputFormat.WAYBAR and not offline_emitted:
+            print(WAYBAR_OFFLINE_PAYLOAD, flush=True)
+            offline_emitted = True
+
     while True:
         try:
             for event in read_events(endpoint, output_format, last_event_id):
                 if event.event != output_format.value or not event.data:
                     continue
                 print(event.data, flush=True)
+                offline_emitted = False
                 if event.event_id:
                     last_event_id = event.event_id
                 if event.retry is not None:
@@ -171,9 +193,11 @@ def subscribe(endpoint: Path, output_format: OutputFormat, once: bool = False) -
                     return
             if once:
                 return
+            emit_offline()
         except (OSError, UnicodeError, http.client.HTTPException, RuntimeError) as error:
             if once:
                 raise RuntimeError(f"Pi Beacon API is unavailable at {endpoint}") from error
+            emit_offline()
             print(f"Pi Beacon reconnecting: {error}", file=sys.stderr)
         time.sleep(reconnect_delay)
         reconnect_delay = min(5, reconnect_delay * 2)

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+import pi_beacon.client as client_module
 from pi_beacon.client import OutputFormat, iter_sse, main, resolve_socket, subscribe
 
 
@@ -82,3 +84,26 @@ def test_stream_entrypoint_reports_an_unavailable_socket(
 
     assert main() == 1
     assert str(missing) in capsys.readouterr().err
+
+
+def test_waybar_subscriber_emits_an_offline_control_state(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def unavailable(*_args: object, **_kwargs: object):
+        raise OSError("service stopped")
+
+    def stop_after_first_retry(_seconds: float) -> None:
+        raise StopIteration
+
+    monkeypatch.setattr(client_module, "read_events", unavailable)
+    monkeypatch.setattr(client_module.time, "sleep", stop_after_first_retry)
+
+    with pytest.raises(StopIteration):
+        subscribe(tmp_path / "missing.sock", OutputFormat.WAYBAR)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["alt"] == "pi-beacon-offline"
+    assert payload["class"] == "offline"
+    assert "Right-click" in payload["tooltip"]

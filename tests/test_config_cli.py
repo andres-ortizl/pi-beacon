@@ -105,6 +105,7 @@ def test_asset_installers(tmp_path: Path, monkeypatch) -> None:
     assert qml.exit_code == 0
     assert (tmp_path / "quickshell" / "demo" / "PiBeaconPanel.qml").is_file()
     assert (tmp_path / "quickshell" / "demo" / "PiBeaconTheme.qml").is_file()
+    assert (tmp_path / "quickshell" / "demo" / "PiBeaconServiceMenu.qml").is_file()
 
     duplicate = runner.invoke(app, ["install-quickshell", "demo"])
     assert duplicate.exit_code != 0
@@ -116,6 +117,35 @@ def test_asset_installers(tmp_path: Path, monkeypatch) -> None:
     )
     assert service.exit_code == 0
     assert "pi-beacon serve" in service_target.read_text()
+
+
+@pytest.mark.parametrize("config_name", [".", "..", "../outside"])
+def test_quickshell_installer_rejects_path_escape_names(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    config_name: str,
+) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+
+    result = runner.invoke(app, ["install-quickshell", config_name, "--force"])
+
+    assert result.exit_code != 0
+    assert "Invalid Quickshell config name" in result.output
+    assert not (tmp_path / "config" / "outside" / "PiBeaconPanel.qml").exists()
+
+
+def test_quickshell_installer_rejects_an_absolute_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    outside = tmp_path / "absolute"
+
+    result = runner.invoke(app, ["install-quickshell", str(outside), "--force"])
+
+    assert result.exit_code != 0
+    assert "Invalid Quickshell config name" in result.output
+    assert not (outside / "PiBeaconPanel.qml").exists()
 
 
 def test_doctor_command(tmp_path: Path, monkeypatch) -> None:

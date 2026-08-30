@@ -23,6 +23,18 @@ PiBeaconPanel {
 }
 ```
 
+Instantiate the service menu in the same configuration. Waybar opens it on right-click.
+
+```qml
+PiBeaconServiceMenu {
+    fontFamily: "JetBrainsMono Nerd Font"
+    topMargin: 46
+    rightMargin: 12
+}
+```
+
+`Quit Pi Beacon` stops the service for the current login session without disabling autostart. The menu remains available through Waybar in its offline state, so the user can start the service again. `Disable at login` is a separate action.
+
 ## Themes
 
 `PiBeaconTheme.qml` contains the calm Zen default. Pass any compatible QML object through the public `theme` property to replace it without touching the driver.
@@ -54,6 +66,8 @@ The component registers an IPC target:
 qs -c YOUR_CONFIG_NAME ipc call piBeacon toggle
 qs -c YOUR_CONFIG_NAME ipc call piBeacon close
 qs -c YOUR_CONFIG_NAME ipc call piBeacon refresh
+qs -c YOUR_CONFIG_NAME ipc call piBeaconServiceMenu toggle
+qs -c YOUR_CONFIG_NAME ipc call piBeaconServiceMenu close
 ```
 
 Set `PI_BEACON_STREAM_EXECUTABLE` if `pi-beacon-stream` is not at `~/.local/bin/pi-beacon-stream`. The `refreshInterval` property controls reconnect delay after an unexpected subscriber exit; service cadence is configured under `[service]`.

@@ -10,4 +10,6 @@ The module starts one persistent `pi-beacon-stream --format waybar` process. The
 - active color while work runs
 - attention color while Pi waits for input or a child needs attention
 
-Hover for a compact live summary. Configure `on-click` to call the `piBeacon` Quickshell IPC target.
+Hover for a compact live summary. Configure `on-click` to call the `piBeacon` Quickshell IPC target. Configure `on-click-right` to call `piBeaconServiceMenu toggle`.
+
+The right-click menu provides Start, Restart, `Quit Pi Beacon`, and `Disable at login`. Quit stops the service without disabling its next-login autostart. While the API is unavailable, the subscriber emits an offline Waybar state and continues reconnecting.

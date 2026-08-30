@@ -22,28 +22,24 @@ Inspired by the local-first analytics approach in [phun333/pi-infobar](https://g
 
 ## Installation
 
-Install the Python backend and CLI:
+Run the interactive installer:
 
 ```bash
-uv tool install git+https://github.com/andres-ortizl/pi-beacon
+curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh | sh
 ```
 
-Register the live-status extension with Pi:
+Choose Install/Update or Uninstall. The script adds `uv` when required, installs the backend and version-pinned Pi extension, configures the user service, detects Quickshell, and asks which local data to preserve. It never uses `sudo`. Restart Pi or run `/reload` after installation.
+
+For the safer inspect-then-run path:
 
 ```bash
-pi install git:github.com/andres-ortizl/pi-beacon
+curl -fsSLo /tmp/pi-beacon-install.sh \
+  https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh
+less /tmp/pi-beacon-install.sh
+sh /tmp/pi-beacon-install.sh
 ```
 
-Restart Pi or run `/reload` in an existing session. Sessions started before the extension was loaded remain visible through process discovery, but live usage and state appear after reload.
-
-Install and enable the supervised local service:
-
-```bash
-pi-beacon install-systemd
-systemctl --user daemon-reload
-systemctl --user enable --now pi-beacon.service
-```
-
+Use `sh install.sh --help` for non-interactive automation flags such as `--yes`, `--version`, `--quickshell`, and `--purge`.
 The service uses one Granian ASGI worker with uvloop. It listens only on the private Unix socket `$XDG_RUNTIME_DIR/pi-beacon/api.sock`.
 
 ### Quickshell
@@ -66,10 +62,19 @@ PiBeaconPanel {
 }
 ```
 
-The component registers the `piBeacon` IPC target:
+```qml
+PiBeaconServiceMenu {
+    fontFamily: "JetBrainsMono Nerd Font"
+    topMargin: 46
+    rightMargin: 12
+}
+```
+
+The components register dashboard and service-menu IPC targets:
 
 ```bash
 qs -c YOUR_CONFIG_NAME ipc call piBeacon toggle
+qs -c YOUR_CONFIG_NAME ipc call piBeaconServiceMenu toggle
 ```
 
 ### Waybar
@@ -81,9 +86,12 @@ Merge `integrations/waybar/config.jsonc` into your Waybar configuration and incl
   "exec": "$HOME/.local/bin/pi-beacon-stream --format waybar",
   "return-type": "json",
   "tooltip": true,
-  "on-click": "qs -c YOUR_QUICKSHELL_CONFIG ipc call piBeacon toggle"
+  "on-click": "qs -c YOUR_QUICKSHELL_CONFIG ipc call piBeacon toggle",
+  "on-click-right": "qs -c YOUR_QUICKSHELL_CONFIG ipc call piBeaconServiceMenu toggle"
 }
 ```
+
+Right-click opens Start, Restart, `Quit Pi Beacon`, and `Disable at login`. Quit stops the service now but preserves next-login autostart. The Waybar module remains available in an offline state so Pi Beacon can be started again.
 
 ## CLI
 

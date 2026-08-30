@@ -208,3 +208,43 @@ async def test_async_indexer_matches_pi_billable_usage_entry_types(tmp_path: Pat
     assert stats.cost == 1.0
     assert stats.tokens == 100
     assert stats.messages == 1
+
+
+def test_jsonl_reader_returns_a_bounded_complete_line_batch(tmp_path: Path) -> None:
+    path = tmp_path / "large.jsonl"
+    line = json.dumps({"type": "message", "content": "x" * 16_384}) + "\n"
+    path.write_text(line * 128)
+
+    batch = AsyncSessionIndexer.read_appended_events(path, 0)
+
+    assert 0 < batch.offset < path.stat().st_size
+    assert batch.offset <= 1024 * 1024 + len(line)
+    assert batch.events
+    assert all(event["type"] == "message" for event in batch.events)
+
+
+@pytest.mark.anyio
+async def test_async_indexer_consumes_every_bounded_batch(tmp_path: Path) -> None:
+    sessions = tmp_path / "sessions"
+    sessions.mkdir()
+    path = sessions / "large-session.jsonl"
+    now = datetime.now().astimezone().isoformat()
+    append_event(path, {"type": "session", "id": "large-session", "cwd": "/code/demo"})
+    for _ in range(96):
+        payload = assistant_event(now, 0.01, 10)
+        message = payload["message"]
+        assert isinstance(message, dict)
+        message["content"] = "x" * 16_384
+        append_event(path, payload)
+
+    indexer = AsyncSessionIndexer(sessions, tmp_path / "cache.sqlite3")
+    await indexer.start()
+    try:
+        stats = await indexer.today()
+    finally:
+        await indexer.close()
+
+    assert stats.sessions == 1
+    assert stats.messages == 96
+    assert stats.tokens == 960
+    assert stats.cost == pytest.approx(0.96)

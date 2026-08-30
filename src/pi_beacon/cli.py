@@ -3,6 +3,7 @@ from __future__ import annotations
 import errno
 import json
 import os
+import re
 import socket
 import stat
 import sys
@@ -126,6 +127,8 @@ def serve(
         str(endpoint),
         "--uds-permissions",
         "0600",
+        "--workers-kill-timeout",
+        "5",
         "pi_beacon.api:app",
     ]
     os.execvpe(sys.executable, arguments, environment)
@@ -222,11 +225,17 @@ def install_quickshell(
     config_name: Annotated[str, typer.Argument(help="Quickshell configuration name.")],
     force: Annotated[bool, typer.Option(help="Replace an existing component.")] = False,
 ) -> None:
-    """Copy the maintained panel into an existing Quickshell configuration."""
+    """Copy the maintained panel and service menu into a Quickshell configuration."""
+    if config_name in {".", ".."} or re.fullmatch(r"[A-Za-z0-9._-]+", config_name) is None:
+        raise typer.BadParameter(f"Invalid Quickshell config name: {config_name}")
     xdg_config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     destination_dir = xdg_config / "quickshell" / config_name
     resources = files("pi_beacon").joinpath("assets", "quickshell")
-    for file_name in ("PiBeaconPanel.qml", "PiBeaconTheme.qml"):
+    for file_name in (
+        "PiBeaconPanel.qml",
+        "PiBeaconTheme.qml",
+        "PiBeaconServiceMenu.qml",
+    ):
         destination = destination_dir / file_name
         write_asset(resources.joinpath(file_name), destination, force)
         typer.echo(destination)

@@ -15,3 +15,8 @@
   color: @yellow;
   background-color: alpha(@yellow, 0.16);
 }
+
+#custom-pi-beacon.offline {
+  color: @red;
+  background-color: alpha(@red, 0.12);
+}

@@ -10,4 +10,12 @@ ShellRoot {
         topMargin: 78
         rightMargin: 12
     }
+
+    PiBeaconServiceMenu {
+        fontFamily: "JetBrainsMono Nerd Font"
+        panelColor: "#ee1e1e2e"
+        accentColor: "#9580ff"
+        topMargin: 46
+        rightMargin: 12
+    }
 }

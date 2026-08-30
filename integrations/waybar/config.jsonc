@@ -5,6 +5,7 @@
     "exec": "$HOME/.local/bin/pi-beacon-stream --format waybar",
     "return-type": "json",
     "tooltip": true,
-    "on-click": "qs -c YOUR_QUICKSHELL_CONFIG ipc call piBeacon toggle"
+    "on-click": "qs -c YOUR_QUICKSHELL_CONFIG ipc call piBeacon toggle",
+    "on-click-right": "qs -c YOUR_QUICKSHELL_CONFIG ipc call piBeaconServiceMenu toggle"
   }
 }

@@ -18,6 +18,8 @@ from pi_beacon.database import protect_database_files, upgrade_database
 from pi_beacon.history import JsonObject, mapping, numeric_float, numeric_int, parse_time
 from pi_beacon.models import RecentSession, SessionFile, TodayStats
 
+READ_BATCH_BYTES = 1024 * 1024
+
 
 @dataclass(frozen=True)
 class ReadBatch:
@@ -187,9 +189,11 @@ class AsyncSessionIndexer:
                 try:
                     payload = mapping(json.loads(raw_line))
                 except (UnicodeDecodeError, json.JSONDecodeError):
-                    continue
+                    payload = None
                 if payload is not None:
                     events.append(payload)
+                if next_offset - offset >= READ_BATCH_BYTES:
+                    break
         stat = path.stat()
         return ReadBatch(
             events=tuple(events),
@@ -213,10 +217,14 @@ class AsyncSessionIndexer:
         return fingerprint != record.cursor_fingerprint
 
     async def update_record_from_file(self, record: SessionFile, path: Path, now: datetime) -> None:
-        batch = await asyncio.to_thread(self.read_appended_events, path, record.offset)
-        for payload in batch.events:
-            self.apply_event(record, payload, now)
-        record.offset = batch.offset
+        while True:
+            previous_offset = record.offset
+            batch = await asyncio.to_thread(self.read_appended_events, path, record.offset)
+            for payload in batch.events:
+                self.apply_event(record, payload, now)
+            record.offset = batch.offset
+            if record.offset >= batch.size or record.offset == previous_offset:
+                break
         record.size = batch.size
         record.mtime_ns = batch.mtime_ns
         record.source_dev = batch.source_dev

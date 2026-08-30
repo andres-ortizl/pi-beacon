@@ -110,3 +110,45 @@ def test_granian_uvloop_serves_snapshot_and_sse_over_private_socket(tmp_path: Pa
         assert '"alt":"pi-beacon"' in streamed
     finally:
         stop_process(process)
+
+
+def test_service_stops_with_an_active_sse_subscriber(tmp_path: Path) -> None:
+    sessions = tmp_path / "sessions"
+    runtime = tmp_path / "runtime"
+    sessions.mkdir()
+    runtime.mkdir()
+    socket_path = runtime / "api.sock"
+    config = tmp_path / "config.toml"
+    config.write_text(
+        f"schema_version = 1\n[service]\nhistory_enabled = false\n[paths]\n"
+        f'sessions_dir = "{sessions}"\nruntime_dir = "{runtime}"\n'
+        f'database = "{tmp_path / "cache.sqlite3"}"\n'
+    )
+    process = subprocess.Popen(
+        [sys.executable, "-m", "pi_beacon", "serve", "--config", str(config)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    event_stream = None
+    try:
+        wait_for_socket(socket_path, process)
+        transport = httpx.HTTPTransport(uds=str(socket_path))
+        with httpx.Client(transport=transport, base_url="http://pi-beacon") as client:
+            assert get_when_ready(client, process).status_code == 200
+        event_stream = read_events(socket_path, OutputFormat.SNAPSHOT, "")
+        assert next(event_stream).event == "snapshot"
+
+        os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=8)
+        except subprocess.TimeoutExpired:
+            raise AssertionError(
+                "Service did not stop while an SSE subscriber was active"
+            ) from None
+        assert process.returncode == 0
+    finally:
+        if event_stream is not None:
+            event_stream.close()
+        stop_process(process)

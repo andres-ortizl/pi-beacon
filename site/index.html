@@ -346,8 +346,8 @@
           </h2>
         </div>
         <div class="proof-grid">
-          <div><strong>55</strong><span>automated tests</span></div>
-          <div><strong>86.24%</strong><span>Python coverage</span></div>
+          <div><strong>72</strong><span>automated tests</span></div>
+          <div><strong>86.76%</strong><span>Python coverage</span></div>
           <div><strong>0</strong><span>TCP listeners</span></div>
           <div><strong>v1</strong><span>documented contract</span></div>
         </div>
@@ -366,56 +366,34 @@ local SSE     →  any frontend</code></pre>
       >
         <div class="section-heading">
           <p class="eyebrow">Free and local</p>
-          <h2 id="install-title">
-            Install the driver. Start the service. Register the Pi extension.
-          </h2>
+          <h2 id="install-title">One command. Complete local installation.</h2>
           <p>
-            Three explicit steps. No bootstrap script and no hidden system
-            changes.
+            Paste one command. The installer asks whether to install, update or
+            uninstall, then offers the relevant desktop integration choices.
           </p>
         </div>
         <div class="command-list">
           <div class="command-card">
-            <span>1. Install the Python driver</span>
-            <code>uv tool install pi-beacon</code>
-            <button
-              class="copy-button"
-              type="button"
-              data-copy="uv tool install pi-beacon"
-            >
-              Copy
-            </button>
-          </div>
-          <div class="command-card">
-            <span>2. Start the local service</span>
+            <span>Open the interactive installer</span>
             <code
-              >pi-beacon install-systemd &amp;&amp; systemctl --user
-              daemon-reload &amp;&amp; systemctl --user enable --now
-              pi-beacon</code
+              >curl -fsSL
+              https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh
+              | sh</code
             >
             <button
               class="copy-button"
               type="button"
-              data-copy="pi-beacon install-systemd &amp;&amp; systemctl --user daemon-reload &amp;&amp; systemctl --user enable --now pi-beacon.service"
-            >
-              Copy
-            </button>
-          </div>
-          <div class="command-card">
-            <span>3. Register the Pi extension</span>
-            <code>pi install npm:pi-beacon</code>
-            <button
-              class="copy-button"
-              type="button"
-              data-copy="pi install npm:pi-beacon"
+              data-copy="curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh | sh"
             >
               Copy
             </button>
           </div>
         </div>
         <p class="install-note">
-          Free software under the MIT license. Remove it at any time with the
-          matching systemd, uv and Pi uninstall commands.
+          The same script installs and uninstalls Pi Beacon. It detects
+          Quickshell, asks which configuration to use, preserves local data by
+          default and requires explicit confirmation before purge. Automation
+          flags remain available through <code>--help</code>.
         </p>
       </section>
 
