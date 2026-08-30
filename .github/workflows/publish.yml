@@ -43,7 +43,15 @@ jobs:
       - run: uv run ty check
       - run: uv run pytest
       - run: uv build
-      - run: uv publish --trusted-publishing always dist/*
+      - name: Publish to PyPI if needed
+        run: |
+          package_version=$(uv version --short)
+          if curl --fail --silent --output /dev/null \
+            "https://pypi.org/pypi/pi-beacon/$package_version/json"; then
+            echo "pi-beacon $package_version is already on PyPI"
+          else
+            uv publish --trusted-publishing always dist/*
+          fi
 
   npm:
     name: Publish to npm
@@ -71,4 +79,11 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run format:check
       - run: npm run typecheck
-      - run: npm publish --access public --provenance
+      - name: Publish to npm if needed
+        run: |
+          package_version=$(node -p "require('./package.json').version")
+          if npm view "pi-beacon@$package_version" version >/dev/null 2>&1; then
+            echo "pi-beacon $package_version is already on npm"
+          else
+            npm publish --access public --provenance
+          fi
