@@ -26,7 +26,7 @@ def test_release_versions_are_consistent() -> None:
         version = tomllib.load(project_file)["project"]["version"]
     package_version = json.loads((ROOT / "package.json").read_text())["version"]
 
-    assert version == "1.0.0"
+    assert version == "1.1.0"
     assert package_version == version
     assert f'DEFAULT_VERSION="v{version}"' in (ROOT / "install.sh").read_text()
     assert f'version="{version}"' in (ROOT / "src" / "pi_beacon" / "api.py").read_text()
@@ -47,18 +47,35 @@ def test_quickshell_assets_are_customizable() -> None:
     theme = ROOT / "src" / "pi_beacon" / "assets" / "quickshell" / "PiBeaconTheme.qml"
     assert panel.is_file()
     assert theme.is_file()
+    for name in (
+        "PiBeaconOverview.qml",
+        "PiBeaconActivity.qml",
+        "PiBeaconActivityNode.qml",
+        "PiBeaconModels.qml",
+    ):
+        assert (ROOT / "src" / "pi_beacon" / "assets" / "quickshell" / name).is_file()
     panel_source = panel.read_text()
     assert "property var theme: defaultTheme" in panel_source
     assert 'root.streamExecutable, "--format", "snapshot"' in panel_source
-    assert 'property string name: "Zen"' in theme.read_text()
+    assert 'label: "OVERVIEW"' in panel_source
+    assert 'label: "ACTIVITY"' in panel_source
+    assert 'label: "MODELS"' in panel_source
+    assert "PiBeaconActivityNode" in (panel.parent / "PiBeaconActivity.qml").read_text()
+    assert "modelUsage7d" in (panel.parent / "PiBeaconModels.qml").read_text()
+    theme_source = theme.read_text()
+    assert 'property string name: "Zen"' in theme_source
+    assert 'property color accent: "#b8ff78"' in theme_source
 
 
 def test_service_and_migrations_are_packaged() -> None:
     package = ROOT / "src" / "pi_beacon"
     assert (package / "assets" / "systemd" / "pi-beacon.service").is_file()
+    assert (package / "assets" / "systemd" / "pi-beacon-update-check.service").is_file()
+    assert (package / "assets" / "systemd" / "pi-beacon-update-check.timer").is_file()
     assert (package / "migrations" / "env.py").is_file()
     assert (package / "migrations" / "versions" / "0001_initial.py").is_file()
     assert (package / "migrations" / "versions" / "0002_source_identity.py").is_file()
+    assert (package / "migrations" / "versions" / "0003_dashboard_history.py").is_file()
 
 
 def test_landing_page_has_no_dead_local_assets() -> None:

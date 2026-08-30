@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pi_beacon.models import LiveSession, WaybarPayload
+from pi_beacon.models import DashboardSnapshot, LiveSession, WaybarPayload
 
 
 def test_live_bridge_accepts_camel_case() -> None:
@@ -28,3 +28,63 @@ def test_live_bridge_accepts_camel_case() -> None:
 def test_waybar_class_alias() -> None:
     payload = WaybarPayload(text="π", css_class="idle", tooltip="ready")
     assert payload.model_dump(by_alias=True)["class"] == "idle"
+
+
+def test_snapshot_serializes_additive_dashboard_data() -> None:
+    snapshot = DashboardSnapshot.model_validate(
+        {
+            "generatedAt": "2026-08-30T12:00:00Z",
+            "runtime": {
+                "activity": [
+                    {
+                        "identity": "pi-session:parent",
+                        "kind": "session",
+                        "sessionId": "parent",
+                        "displayName": "Parent",
+                        "children": [
+                            {
+                                "identity": "agent:child",
+                                "kind": "subagent",
+                                "parentIdentity": "pi-session:parent",
+                                "displayName": "reviewer",
+                                "model": "openai/gpt-5.6",
+                            }
+                        ],
+                    }
+                ],
+                "modelActivity": [
+                    {
+                        "model": "openai/gpt-5.6",
+                        "liveCount": 1,
+                        "sessionCount": 1,
+                    }
+                ],
+            },
+            "today": {},
+            "update": {
+                "currentVersion": "1.0.0",
+                "latestVersion": "1.1.0",
+                "available": True,
+                "releaseUrl": "https://example.test/releases/v1.1.0",
+            },
+            "history": {
+                "dailyCost": [{"day": "2026-08-30", "cost": 0.25}],
+                "modelUsageToday": [
+                    {
+                        "model": "openai/gpt-5.6",
+                        "cost": 0.25,
+                        "tokens": 100,
+                        "responses": 1,
+                        "sessions": 1,
+                    }
+                ],
+            },
+        }
+    )
+
+    payload = snapshot.model_dump(by_alias=True)
+    assert payload["runtime"]["activity"][0]["children"][0]["parentIdentity"] == "pi-session:parent"
+    assert payload["runtime"]["modelActivity"][0]["liveCount"] == 1
+    assert payload["history"]["dailyCost"][0]["cost"] == 0.25
+    assert payload["update"]["latestVersion"] == "1.1.0"
+    assert payload["update"]["available"] is True

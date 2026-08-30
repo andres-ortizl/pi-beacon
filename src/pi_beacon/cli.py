@@ -7,6 +7,7 @@ import re
 import socket
 import stat
 import sys
+import tempfile
 from importlib.resources import files
 from importlib.resources.abc import Traversable
 from pathlib import Path
@@ -31,6 +32,13 @@ from pi_beacon.paths import (
 )
 from pi_beacon.schema import schema_drift, write_schemas
 from pi_beacon.service import DashboardService
+from pi_beacon.updates import (
+    check_for_update,
+    download_installer,
+    installed_version,
+    run_installer,
+    write_update_status,
+)
 
 app = typer.Typer(no_args_is_help=True, help="Pi session observability for Linux desktops.")
 console = Console()
@@ -38,6 +46,58 @@ console = Console()
 
 def service(config: Path | None) -> DashboardService:
     return DashboardService(load_settings(config))
+
+
+@app.command("version")
+def version_command() -> None:
+    """Print the installed Pi Beacon version."""
+    typer.echo(installed_version())
+
+
+@app.command("update")
+def update_command(
+    check: Annotated[
+        bool,
+        typer.Option("--check", help="Check for a release without installing it."),
+    ] = False,
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Install without an interactive confirmation."),
+    ] = False,
+    config: Annotated[Path | None, typer.Option(help="Configuration TOML path.")] = None,
+) -> None:
+    """Check for and install the latest Pi Beacon release."""
+    try:
+        status = check_for_update()
+        cache = database_path(load_settings(config)).with_name("update.json")
+        write_update_status(status, cache)
+    except RuntimeError as error:
+        raise ClickException(str(error)) from error
+
+    typer.echo(f"Installed: {status.current_version}")
+    typer.echo(f"Latest:    {status.latest_version}")
+    if not status.available:
+        typer.echo("Pi Beacon is up to date.")
+        return
+
+    typer.echo("Update available.")
+    if check:
+        typer.echo("Run: pi-beacon update")
+        return
+    if not yes and not typer.confirm(
+        f"Update Pi Beacon {status.current_version} to {status.latest_version}?"
+    ):
+        return
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="pi-beacon-update-") as directory:
+            installer = download_installer(
+                f"v{status.latest_version}",
+                Path(directory),
+            )
+            run_installer(installer, f"v{status.latest_version}")
+    except RuntimeError as error:
+        raise ClickException(str(error)) from error
 
 
 @app.command()
@@ -220,6 +280,23 @@ def install_systemd(
     typer.echo(destination)
 
 
+@app.command("install-update-timer")
+def install_update_timer(
+    force: Annotated[bool, typer.Option(help="Replace existing update timer units.")] = False,
+) -> None:
+    """Install the opt-in daily update-check service and timer."""
+    xdg_config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    destination_dir = xdg_config / "systemd" / "user"
+    resources = files("pi_beacon").joinpath("assets", "systemd")
+    for file_name in (
+        "pi-beacon-update-check.service",
+        "pi-beacon-update-check.timer",
+    ):
+        destination = destination_dir / file_name
+        write_asset(resources.joinpath(file_name), destination, force)
+        typer.echo(destination)
+
+
 @app.command("install-quickshell")
 def install_quickshell(
     config_name: Annotated[str, typer.Argument(help="Quickshell configuration name.")],
@@ -233,6 +310,10 @@ def install_quickshell(
     resources = files("pi_beacon").joinpath("assets", "quickshell")
     for file_name in (
         "PiBeaconPanel.qml",
+        "PiBeaconOverview.qml",
+        "PiBeaconActivity.qml",
+        "PiBeaconActivityNode.qml",
+        "PiBeaconModels.qml",
         "PiBeaconTheme.qml",
         "PiBeaconServiceMenu.qml",
     ):

@@ -209,3 +209,120 @@ def test_elapsed_and_process_helpers(tmp_path: Path) -> None:
     assert project
     assert cwd is not None
     assert runtime.subagent_statuses(tmp_path / "missing") == []
+
+
+def test_activity_tree_associates_nested_agents_and_keeps_orphans() -> None:
+    parent = LiveSession(
+        pid=10,
+        session_id="parent",
+        project="dashboard",
+        display_name="Dashboard release",
+        state=SessionState.RUNNING,
+        model="openai/gpt-5.6",
+    )
+    child = LiveSession(
+        pid=20,
+        parent_pid=10,
+        instance_id="child-instance",
+        process_start_time="200",
+        session_id="child",
+        project="dashboard",
+        display_name="reviewer",
+        state=SessionState.RUNNING,
+        detail="Review the release contract",
+        model="anthropic/claude-sonnet-4.6",
+        kind="subagent",
+    )
+    statuses = [
+        SubagentStatus(
+            agent="reviewer",
+            state="running",
+            run_id="run-1",
+            pid=20,
+            process_start_time="200",
+        ),
+        SubagentStatus(
+            agent="test-runner",
+            state="waiting",
+            run_id="run-1",
+            pid=30,
+            parent_pid=20,
+        ),
+        SubagentStatus(agent="orphan", state="running", run_id="run-2"),
+    ]
+
+    agents = runtime.normalize_agents([child], statuses)
+    tree, unattached = runtime.activity_tree([parent], agents)
+
+    assert agents[0].model == "anthropic/claude-sonnet-4.6"
+    assert agents[0].parent_session_id == "parent"
+    assert tree[0].kind == "session"
+    assert tree[0].children[0].kind == "subagent"
+    assert tree[0].children[0].display_name == "reviewer"
+    assert tree[0].children[0].model == "anthropic/claude-sonnet-4.6"
+    assert tree[0].children[0].children[0].display_name == "test-runner"
+    assert tree[0].children[0].children[0].model == ""
+    assert [agent.agent for agent in unattached] == ["orphan"]
+
+
+def test_attention_count_includes_waiting_sessions_and_agents() -> None:
+    sessions = [
+        LiveSession(
+            pid=10,
+            session_id="waiting",
+            project="dashboard",
+            state=SessionState.WAITING,
+        ),
+        LiveSession(pid=11, session_id="idle", project="dashboard", state=SessionState.IDLE),
+    ]
+    agents = [
+        runtime.AgentStatus(
+            identity="paused",
+            source="pi-subagents",
+            agent="reviewer",
+            state="paused",
+        ),
+        runtime.AgentStatus(
+            identity="running",
+            source="pi-subagents",
+            agent="runner",
+            state="running",
+        ),
+    ]
+
+    assert runtime.attention_count(sessions, agents) == 2
+
+
+def test_model_activity_counts_only_nodes_with_their_own_model() -> None:
+    sessions = [
+        LiveSession(
+            pid=10,
+            session_id="parent",
+            project="dashboard",
+            model="openai/gpt-5.6",
+        )
+    ]
+    agents = [
+        runtime.AgentStatus(
+            identity="known",
+            source="pi-process",
+            agent="reviewer",
+            state="running",
+            model="anthropic/claude-sonnet-4.6",
+        ),
+        runtime.AgentStatus(
+            identity="unknown",
+            source="pi-subagents",
+            agent="runner",
+            state="running",
+        ),
+    ]
+
+    stats = runtime.model_activity(sessions, agents)
+
+    assert [
+        (item.model, item.live_count, item.session_count, item.subagent_count) for item in stats
+    ] == [
+        ("openai/gpt-5.6", 1, 1, 0),
+        ("anthropic/claude-sonnet-4.6", 1, 0, 1),
+    ]

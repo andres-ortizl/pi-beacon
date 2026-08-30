@@ -4,7 +4,7 @@ set -eu
 umask 077
 
 REPOSITORY="andres-ortizl/pi-beacon"
-DEFAULT_VERSION="v1.0.0"
+DEFAULT_VERSION="v1.1.0"
 ACTION="install"
 ACTION_SET=0
 INTERACTIVE_MENU=0
@@ -12,6 +12,7 @@ VERSION=${PI_BEACON_VERSION:-$DEFAULT_VERSION}
 ASSUME_YES=0
 PURGE=0
 QUICKSHELL_CONFIG=""
+UPDATE_CHECK=-1
 
 CONFIG_HOME=${XDG_CONFIG_HOME:-"$HOME/.config"}
 CACHE_HOME=${XDG_CACHE_HOME:-"$HOME/.cache"}
@@ -19,6 +20,8 @@ STATE_HOME=${XDG_STATE_HOME:-"$HOME/.local/state"}
 STATE_DIR="$STATE_HOME/pi-beacon"
 STATE_FILE="$STATE_DIR/installer-state"
 SERVICE_FILE="$CONFIG_HOME/systemd/user/pi-beacon.service"
+UPDATE_SERVICE_FILE="$CONFIG_HOME/systemd/user/pi-beacon-update-check.service"
+UPDATE_TIMER_FILE="$CONFIG_HOME/systemd/user/pi-beacon-update-check.timer"
 PI_SOURCE_ID="git:github.com/$REPOSITORY"
 TEMP_FILE=""
 
@@ -51,14 +54,16 @@ Usage:
 
 Options:
   --yes, -y          Accept required non-interactive confirmations.
-  --version REF      Install a release tag or Git ref. Default: v1.0.0.
+  --version REF      Install a release tag or Git ref. Default: v1.1.0.
   --quickshell NAME  Install the maintained QML components into this config.
+  --update-check     Enable the opt-in daily release check timer.
+  --no-update-check  Disable the daily release check timer.
   --purge            With uninstall, also remove config, cache, runtime data,
                      installer state, and installer-managed Quickshell files.
   --help, -h         Show this help.
 
 Examples:
-  curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.1.0/install.sh | sh
   sh install.sh install --yes --quickshell shell
   sh install.sh uninstall --yes --purge
 EOF
@@ -122,12 +127,22 @@ choose_quickshell_config() {
 }
 
 prepare_interactive() {
-	[ "$ASSUME_YES" -eq 0 ] || return 0
+	if [ "$ASSUME_YES" -ne 0 ]; then
+		[ "$UPDATE_CHECK" -ge 0 ] || UPDATE_CHECK=0
+		return 0
+	fi
 	if [ "$ACTION" = "install" ] || [ "$ACTION" = "update" ]; then
 		if [ "$INTERACTIVE_MENU" -eq 0 ]; then
 			confirm "Install Pi Beacon $VERSION?" || exit 0
 		fi
 		choose_quickshell_config
+		if [ "$UPDATE_CHECK" -lt 0 ]; then
+			if confirm "Check once per day for new Pi Beacon releases?"; then
+				UPDATE_CHECK=1
+			else
+				UPDATE_CHECK=0
+			fi
+		fi
 		return 0
 	fi
 	confirm "Uninstall Pi Beacon?" || exit 0
@@ -183,6 +198,7 @@ save_state() {
 	mkdir -p "$STATE_DIR"
 	{
 		printf 'version=%s\n' "$VERSION"
+		printf 'update_check=%s\n' "$UPDATE_CHECK"
 		for config_name in $state_configs; do
 			case "$config_name" in
 			"." | ".." | *[!A-Za-z0-9._-]*)
@@ -198,6 +214,35 @@ save_state() {
 			printf 'quickshell=%s\n' "$QUICKSHELL_CONFIG"
 		fi
 	} >"$STATE_FILE"
+}
+
+install_quickshell_assets() {
+	installed_configs=""
+	for config_name in $(tracked_quickshell_configs) $QUICKSHELL_CONFIG; do
+		[ -n "$config_name" ] || continue
+		case "$config_name" in
+		"." | ".." | *[!A-Za-z0-9._-]*)
+			fail "Unsafe Quickshell config in installer state"
+			;;
+		esac
+		case " $installed_configs " in
+		*" $config_name "*) continue ;;
+		esac
+		pi-beacon install-quickshell "$config_name" --force
+		installed_configs="$installed_configs $config_name"
+	done
+}
+
+configure_update_timer() {
+	if [ "$UPDATE_CHECK" -eq 1 ]; then
+		pi-beacon install-update-timer --force
+		return 0
+	fi
+	if [ -f "$UPDATE_SERVICE_FILE" ] || [ -f "$UPDATE_TIMER_FILE" ]; then
+		systemctl --user disable --now pi-beacon-update-check.timer ||
+			fail "Could not disable the Pi Beacon update timer"
+		rm -f "$UPDATE_SERVICE_FILE" "$UPDATE_TIMER_FILE"
+	fi
 }
 
 install_beacon() {
@@ -223,15 +268,17 @@ install_beacon() {
 	fi
 
 	pi-beacon install-systemd --force
+	configure_update_timer
 	systemctl --user daemon-reload
 	systemctl --user enable --now pi-beacon.service
+	if [ "$UPDATE_CHECK" -eq 1 ]; then
+		systemctl --user enable --now pi-beacon-update-check.timer
+	fi
 
 	say "Registering the Pi extension..."
 	pi install "$pi_source"
 
-	if [ -n "$QUICKSHELL_CONFIG" ]; then
-		pi-beacon install-quickshell "$QUICKSHELL_CONFIG" --force
-	fi
+	install_quickshell_assets
 
 	save_state
 	say "Pi Beacon is installed and running."
@@ -247,6 +294,19 @@ tracked_quickshell_configs() {
 	sed -n 's/^quickshell=//p' "$STATE_FILE"
 }
 
+tracked_update_check() {
+	[ -f "$STATE_FILE" ] || return 0
+	sed -n 's/^update_check=//p' "$STATE_FILE" | tail -n 1
+}
+
+resolve_update_check() {
+	[ "$UPDATE_CHECK" -lt 0 ] || return 0
+	case "$(tracked_update_check)" in
+	0) UPDATE_CHECK=0 ;;
+	1) UPDATE_CHECK=1 ;;
+	esac
+}
+
 purge_data() {
 	for tracked_config in $(tracked_quickshell_configs); do
 		case "$tracked_config" in
@@ -257,6 +317,10 @@ purge_data() {
 		qml_dir="$CONFIG_HOME/quickshell/$tracked_config"
 		rm -f \
 			"$qml_dir/PiBeaconPanel.qml" \
+			"$qml_dir/PiBeaconOverview.qml" \
+			"$qml_dir/PiBeaconActivity.qml" \
+			"$qml_dir/PiBeaconActivityNode.qml" \
+			"$qml_dir/PiBeaconModels.qml" \
 			"$qml_dir/PiBeaconTheme.qml" \
 			"$qml_dir/PiBeaconServiceMenu.qml"
 	done
@@ -283,11 +347,17 @@ uninstall_beacon() {
 			systemctl --user disable --now pi-beacon.service ||
 				fail "Could not stop and disable pi-beacon.service"
 		fi
-		rm -f "$SERVICE_FILE"
+		if [ -f "$UPDATE_TIMER_FILE" ] ||
+			systemctl --user is-active --quiet pi-beacon-update-check.timer ||
+			systemctl --user is-enabled --quiet pi-beacon-update-check.timer; then
+			systemctl --user disable --now pi-beacon-update-check.timer ||
+				fail "Could not stop and disable pi-beacon-update-check.timer"
+		fi
+		rm -f "$SERVICE_FILE" "$UPDATE_SERVICE_FILE" "$UPDATE_TIMER_FILE"
 		systemctl --user daemon-reload ||
 			fail "Could not reload the systemd user manager"
-	elif [ -f "$SERVICE_FILE" ]; then
-		fail "systemctl is required to remove the installed user service"
+	elif [ -f "$SERVICE_FILE" ] || [ -f "$UPDATE_SERVICE_FILE" ] || [ -f "$UPDATE_TIMER_FILE" ]; then
+		fail "systemctl is required to remove the installed user services"
 	fi
 
 	if command -v pi >/dev/null 2>&1; then
@@ -341,6 +411,14 @@ while [ "$#" -gt 0 ]; do
 		QUICKSHELL_CONFIG=$2
 		shift 2
 		;;
+	--update-check)
+		UPDATE_CHECK=1
+		shift
+		;;
+	--no-update-check)
+		UPDATE_CHECK=0
+		shift
+		;;
 	--help | -h)
 		usage
 		exit 0
@@ -357,6 +435,7 @@ fi
 
 validate_ref
 validate_quickshell_name
+resolve_update_check
 prepare_interactive
 
 case "$ACTION" in

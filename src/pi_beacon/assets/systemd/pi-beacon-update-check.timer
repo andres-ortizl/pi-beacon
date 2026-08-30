@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Pi Beacon update check
+
+[Timer]
+OnBootSec=15m
+OnUnitActiveSec=24h
+RandomizedDelaySec=1h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

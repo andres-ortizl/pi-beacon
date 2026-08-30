@@ -5,9 +5,15 @@ from datetime import datetime
 
 from pi_beacon.config import Settings
 from pi_beacon.indexer import SessionIndexer
-from pi_beacon.models import DashboardSnapshot, RuntimeStatus, SessionState, WaybarPayload
+from pi_beacon.models import (
+    DashboardSnapshot,
+    RuntimeStatus,
+    SessionState,
+    WaybarPayload,
+)
 from pi_beacon.paths import database_path, live_sessions_dir, sessions_dir, subagent_runs_dir
 from pi_beacon.runtime import collect_runtime
+from pi_beacon.updates import read_update_status
 
 SUPERSCRIPT_DIGITS = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
 
@@ -28,15 +34,18 @@ class DashboardService:
 
     def snapshot(self) -> DashboardSnapshot:
         runtime = self.runtime()
-        today = SessionIndexer(
+        today, history = SessionIndexer(
             sessions_dir(self.settings),
             database_path(self.settings),
             self.settings.recent_session_limit,
-        ).today()
+            self.settings.service.history_retention_days,
+        ).summary()
         return DashboardSnapshot(
             generated_at=datetime.now().astimezone().isoformat(),
             runtime=runtime,
             today=today,
+            history=history,
+            update=read_update_status(database_path(self.settings).with_name("update.json")),
         )
 
     @staticmethod
