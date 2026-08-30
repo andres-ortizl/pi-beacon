@@ -1,5 +1,129 @@
 {
   "$defs": {
+    "ActivityNode": {
+      "description": "A normalized execution node; maintained frontends must use this tree.",
+      "properties": {
+        "children": {
+          "items": {
+            "$ref": "#/$defs/ActivityNode"
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextStats"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "displayName": {
+          "default": "",
+          "title": "Displayname",
+          "type": "string"
+        },
+        "elapsed": {
+          "default": "",
+          "title": "Elapsed",
+          "type": "string"
+        },
+        "identity": {
+          "title": "Identity",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "session",
+            "subagent"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "lastMessageAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lastmessageat"
+        },
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "parentIdentity": {
+          "default": "",
+          "title": "Parentidentity",
+          "type": "string"
+        },
+        "project": {
+          "default": "",
+          "title": "Project",
+          "type": "string"
+        },
+        "sessionId": {
+          "default": "",
+          "title": "Sessionid",
+          "type": "string"
+        },
+        "source": {
+          "default": "",
+          "title": "Source",
+          "type": "string"
+        },
+        "startedAt": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startedat"
+        },
+        "state": {
+          "default": "",
+          "title": "State",
+          "type": "string"
+        },
+        "task": {
+          "default": "",
+          "title": "Task",
+          "type": "string"
+        },
+        "thinking": {
+          "default": "",
+          "title": "Thinking",
+          "type": "string"
+        },
+        "usage": {
+          "$ref": "#/$defs/UsageStats"
+        }
+      },
+      "required": [
+        "identity",
+        "kind"
+      ],
+      "title": "ActivityNode",
+      "type": "object"
+    },
     "AgentStatus": {
       "properties": {
         "agent": {
@@ -20,6 +144,16 @@
           "title": "Instanceid",
           "type": "string"
         },
+        "model": {
+          "default": "",
+          "title": "Model",
+          "type": "string"
+        },
+        "parentIdentity": {
+          "default": "",
+          "title": "Parentidentity",
+          "type": "string"
+        },
         "parentPid": {
           "anyOf": [
             {
@@ -31,6 +165,11 @@
           ],
           "default": null,
           "title": "Parentpid"
+        },
+        "parentSessionId": {
+          "default": "",
+          "title": "Parentsessionid",
+          "type": "string"
         },
         "pid": {
           "anyOf": [
@@ -137,6 +276,51 @@
         "contextWindow"
       ],
       "title": "ContextStats",
+      "type": "object"
+    },
+    "DailyCost": {
+      "properties": {
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "day": {
+          "title": "Day",
+          "type": "string"
+        }
+      },
+      "required": [
+        "day"
+      ],
+      "title": "DailyCost",
+      "type": "object"
+    },
+    "HistoryStats": {
+      "properties": {
+        "dailyCost": {
+          "items": {
+            "$ref": "#/$defs/DailyCost"
+          },
+          "title": "Dailycost",
+          "type": "array"
+        },
+        "modelUsage7d": {
+          "items": {
+            "$ref": "#/$defs/ModelUsageStats"
+          },
+          "title": "Modelusage7D",
+          "type": "array"
+        },
+        "modelUsageToday": {
+          "items": {
+            "$ref": "#/$defs/ModelUsageStats"
+          },
+          "title": "Modelusagetoday",
+          "type": "array"
+        }
+      },
+      "title": "HistoryStats",
       "type": "object"
     },
     "LiveSession": {
@@ -323,6 +507,69 @@
       "title": "LiveSession",
       "type": "object"
     },
+    "ModelActivityStats": {
+      "description": "Known models used by live sessions and correlated live subagents.",
+      "properties": {
+        "liveCount": {
+          "default": 0,
+          "title": "Livecount",
+          "type": "integer"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "sessionCount": {
+          "default": 0,
+          "title": "Sessioncount",
+          "type": "integer"
+        },
+        "subagentCount": {
+          "default": 0,
+          "title": "Subagentcount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "ModelActivityStats",
+      "type": "object"
+    },
+    "ModelUsageStats": {
+      "description": "Assistant-response usage attributed to the model named on each response.",
+      "properties": {
+        "cost": {
+          "default": 0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "responses": {
+          "default": 0,
+          "title": "Responses",
+          "type": "integer"
+        },
+        "sessions": {
+          "default": 0,
+          "title": "Sessions",
+          "type": "integer"
+        },
+        "tokens": {
+          "default": 0,
+          "title": "Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "ModelUsageStats",
+      "type": "object"
+    },
     "RecentSession": {
       "properties": {
         "cost": {
@@ -416,6 +663,13 @@
           "title": "Activecount",
           "type": "integer"
         },
+        "activity": {
+          "items": {
+            "$ref": "#/$defs/ActivityNode"
+          },
+          "title": "Activity",
+          "type": "array"
+        },
         "agents": {
           "items": {
             "$ref": "#/$defs/AgentStatus"
@@ -428,11 +682,23 @@
           "title": "Attention",
           "type": "boolean"
         },
+        "attentionCount": {
+          "default": 0,
+          "title": "Attentioncount",
+          "type": "integer"
+        },
         "childSessions": {
           "items": {
             "$ref": "#/$defs/LiveSession"
           },
           "title": "Childsessions",
+          "type": "array"
+        },
+        "modelActivity": {
+          "items": {
+            "$ref": "#/$defs/ModelActivityStats"
+          },
+          "title": "Modelactivity",
           "type": "array"
         },
         "sessionCount": {
@@ -457,6 +723,13 @@
             "$ref": "#/$defs/SubagentStatus"
           },
           "title": "Subagents",
+          "type": "array"
+        },
+        "unattachedAgents": {
+          "items": {
+            "$ref": "#/$defs/AgentStatus"
+          },
+          "title": "Unattachedagents",
           "type": "array"
         }
       },
@@ -608,6 +881,44 @@
       "title": "TodayStats",
       "type": "object"
     },
+    "UpdateStatus": {
+      "properties": {
+        "available": {
+          "default": false,
+          "title": "Available",
+          "type": "boolean"
+        },
+        "checkedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checkedat"
+        },
+        "currentVersion": {
+          "default": "",
+          "title": "Currentversion",
+          "type": "string"
+        },
+        "latestVersion": {
+          "default": "",
+          "title": "Latestversion",
+          "type": "string"
+        },
+        "releaseUrl": {
+          "default": "",
+          "title": "Releaseurl",
+          "type": "string"
+        }
+      },
+      "title": "UpdateStatus",
+      "type": "object"
+    },
     "UsageStats": {
       "properties": {
         "cacheRead": {
@@ -656,11 +967,17 @@
       "title": "Generatedat",
       "type": "string"
     },
+    "history": {
+      "$ref": "#/$defs/HistoryStats"
+    },
     "runtime": {
       "$ref": "#/$defs/RuntimeStatus"
     },
     "today": {
       "$ref": "#/$defs/TodayStats"
+    },
+    "update": {
+      "$ref": "#/$defs/UpdateStatus"
     },
     "version": {
       "default": 1,

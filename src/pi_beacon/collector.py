@@ -10,9 +10,10 @@ from watchfiles import awatch
 
 from pi_beacon.async_indexer import AsyncSessionIndexer
 from pi_beacon.config import Settings
-from pi_beacon.models import DashboardSnapshot, RuntimeStatus, TodayStats
+from pi_beacon.models import DashboardSnapshot, HistoryStats, RuntimeStatus, TodayStats
 from pi_beacon.paths import database_path, ensure_runtime_root, live_sessions_dir, sessions_dir
 from pi_beacon.service import DashboardService
+from pi_beacon.updates import read_update_status
 
 
 class Collector:
@@ -28,16 +29,22 @@ class Collector:
         self.revision = 0
         self.runtime = RuntimeStatus()
         self.today = TodayStats()
-        self.snapshot = DashboardSnapshot(
-            generated_at=datetime.now().astimezone().isoformat(),
-            runtime=self.runtime,
-            today=self.today,
-        )
+        self.history = HistoryStats()
+        self.snapshot = self.build_snapshot()
         self.waybar = self.service.waybar_payload(self.runtime)
         self.stop_event = asyncio.Event()
         self.refresh_lock = asyncio.Lock()
         self.history_lock = asyncio.Lock()
         self.changed = asyncio.Condition()
+
+    def build_snapshot(self) -> DashboardSnapshot:
+        return DashboardSnapshot(
+            generated_at=datetime.now().astimezone().isoformat(),
+            runtime=self.runtime,
+            today=self.today,
+            history=self.history,
+            update=read_update_status(database_path(self.settings).with_name("update.json")),
+        )
 
     async def start(self) -> None:
         await asyncio.to_thread(ensure_runtime_root, self.settings)
@@ -46,11 +53,12 @@ class Collector:
         await asyncio.to_thread(os.chmod, status_dir, 0o700)
         if self.settings.service.history_enabled:
             await self.indexer.start()
-            runtime, today = await asyncio.gather(
+            runtime, summary = await asyncio.gather(
                 asyncio.to_thread(self.service.runtime),
-                self.indexer.today(),
+                self.indexer.summary(),
             )
-            await self.publish(runtime, today)
+            today, history = summary
+            await self.publish(runtime, today, history)
             return
         runtime = await asyncio.to_thread(self.service.runtime)
         await self.publish(runtime=runtime)
@@ -59,17 +67,16 @@ class Collector:
         self,
         runtime: RuntimeStatus | None = None,
         today: TodayStats | None = None,
+        history: HistoryStats | None = None,
     ) -> None:
         async with self.refresh_lock:
             if runtime is not None:
                 self.runtime = runtime
             if today is not None:
                 self.today = today
-            self.snapshot = DashboardSnapshot(
-                generated_at=datetime.now().astimezone().isoformat(),
-                runtime=self.runtime,
-                today=self.today,
-            )
+            if history is not None:
+                self.history = history
+            self.snapshot = self.build_snapshot()
             self.waybar = self.service.waybar_payload(self.runtime)
             async with self.changed:
                 self.revision += 1
@@ -83,8 +90,8 @@ class Collector:
         if not self.settings.service.history_enabled:
             return
         async with self.history_lock:
-            today = await self.indexer.today()
-        await self.publish(today=today)
+            today, history = await self.indexer.summary()
+        await self.publish(today=today, history=history)
 
     async def events(
         self,

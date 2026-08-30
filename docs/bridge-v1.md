@@ -70,6 +70,9 @@ The persistent service exposes the same `DashboardSnapshot` through `GET /v1/sna
     "childSessions": [],
     "subagents": [],
     "agents": [],
+    "activity": [],
+    "unattachedAgents": [],
+    "modelActivity": [],
     "sessionCount": 0,
     "subagentCount": 0,
     "activeCount": 0,
@@ -81,25 +84,44 @@ The persistent service exposes the same `DashboardSnapshot` through `GET /v1/sna
     "messages": 0,
     "sessions": 0,
     "recent": []
+  },
+  "history": {
+    "dailyCost": [],
+    "modelUsageToday": [],
+    "modelUsage7d": []
+  },
+  "update": {
+    "currentVersion": "1.0.0",
+    "latestVersion": "1.1.0",
+    "available": true,
+    "releaseUrl": "https://github.com/andres-ortizl/pi-beacon/releases/tag/v1.1.0",
+    "checkedAt": "2026-08-30T18:00:00+00:00"
   }
 }
 ```
 
 The Pydantic models in `pi_beacon.models` are the canonical contract. JSON uses camelCase aliases. Python callers can import `DashboardSnapshot` and use snake_case fields.
 
+`runtime.activity` is the normalized execution tree for maintained frontends. Its roots are parent Pi sessions and its children are associated subagents. Every normalized `AgentStatus` also includes additive `parentIdentity` and `parentSessionId` when an unambiguous live process-parent relationship can be resolved. `runtime.unattachedAgents` retains live agents whose parent cannot be established without guessing; the raw `childSessions` and `subagents` arrays remain diagnostic input surfaces. `runtime.modelActivity` groups only live processes that reported their own model.
+
+`history.dailyCost` contains a seven-day, zero-filled daily cost trend. `history.modelUsageToday` and `history.modelUsage7d` aggregate assistant responses by the concrete `responseModel` (or `model`) on each response. Usage without a concrete assistant model remains in overall cost and token totals but is deliberately excluded from model rankings.
+
+`update` reads the last successful manual or opt-in timer check from the local cache. The observability service never performs the network request itself. When no check has run, `latestVersion` and `releaseUrl` are empty and `available` is false.
+
 ## Incremental index
 
-The SQLite cache stores one row per JSONL file:
+The SQLite cache stores one source cursor per JSONL file plus retained daily aggregates:
 
 - last file size and modification time;
 - source device and inode;
 - last complete byte offset and a bounded cursor fingerprint;
-- session identity and project;
-- current-day usage aggregate.
+- session identity and project metadata;
+- all billable daily usage and activity for each source;
+- assistant-response usage grouped by that response's concrete model.
 
-If a file grows, Pi Beacon validates the bytes before the saved offset and reads only the append. A changed inode, shrink, or fingerprint mismatch causes a transactional recomputation from byte zero. Incomplete final lines are not committed. Current-day rows whose source disappeared are removed, and old rows follow the configured retention period.
+If a file grows, Pi Beacon validates the bytes before the saved offset and reads only the append. A changed inode, shrink, or fingerprint mismatch deletes that source's retained aggregates and recomputes it from byte zero. Incomplete final lines are not committed. Missing sources remove their aggregate rows, and daily rows older than the configured retention period are pruned. Existing cache cursors are automatically rebuilt when the aggregate format or configured retention period changes.
 
-SQLModel defines the table. SQLAlchemy async and `aiosqlite` perform service I/O. Alembic owns schema migrations.
+SQLModel defines the tables. SQLAlchemy async and `aiosqlite` perform service I/O. Alembic owns schema migrations.
 
 ## Compatibility
 

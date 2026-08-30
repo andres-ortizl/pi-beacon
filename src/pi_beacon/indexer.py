@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 
 from pi_beacon.async_indexer import AsyncSessionIndexer
-from pi_beacon.models import TodayStats
+from pi_beacon.models import HistoryStats, TodayStats
 
 
 class SessionIndexer:
@@ -22,7 +22,7 @@ class SessionIndexer:
         self.recent_limit = recent_limit
         self.retention_days = retention_days
 
-    async def collect(self) -> TodayStats:
+    async def collect(self) -> tuple[TodayStats, HistoryStats]:
         indexer = AsyncSessionIndexer(
             self.sessions_root,
             self.database_path,
@@ -31,9 +31,13 @@ class SessionIndexer:
         )
         await indexer.start()
         try:
-            return await indexer.today()
+            return await indexer.summary()
         finally:
             await indexer.close()
 
-    def today(self) -> TodayStats:
+    def summary(self) -> tuple[TodayStats, HistoryStats]:
         return asyncio.run(self.collect())
+
+    def today(self) -> TodayStats:
+        today, _history = self.summary()
+        return today
