@@ -54,9 +54,18 @@ def installer_environment(tmp_path: Path) -> tuple[dict[str, str], Path]:
         '    mkdir -p "$XDG_CONFIG_HOME/systemd/user"\n'
         '    : > "$XDG_CONFIG_HOME/systemd/user/pi-beacon.service"\n'
         "    ;;\n"
+        "  install-update-timer)\n"
+        '    mkdir -p "$XDG_CONFIG_HOME/systemd/user"\n'
+        '    : > "$XDG_CONFIG_HOME/systemd/user/pi-beacon-update-check.service"\n'
+        '    : > "$XDG_CONFIG_HOME/systemd/user/pi-beacon-update-check.timer"\n'
+        "    ;;\n"
         "  install-quickshell)\n"
         '    mkdir -p "$XDG_CONFIG_HOME/quickshell/$2"\n'
         '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconPanel.qml"\n'
+        '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconOverview.qml"\n'
+        '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconActivity.qml"\n'
+        '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconActivityNode.qml"\n'
+        '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconModels.qml"\n'
         '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconTheme.qml"\n'
         '    : > "$XDG_CONFIG_HOME/quickshell/$2/PiBeaconServiceMenu.qml"\n'
         "    ;;\n"
@@ -110,6 +119,68 @@ def test_installer_sets_up_backend_extension_service_and_optional_quickshell(
     assert "pi-beacon install-quickshell demo --force" in commands
     assert "systemctl --user daemon-reload" in commands
     assert "systemctl --user enable --now pi-beacon.service" in commands
+
+
+def test_update_reinstalls_tracked_quickshell_configs(tmp_path: Path) -> None:
+    environment, log = installer_environment(tmp_path)
+    installed = subprocess.run(
+        ["sh", str(INSTALLER), "install", "--yes", "--quickshell", "demo"],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+    assert installed.returncode == 0, installed.stderr
+    log.write_text("")
+
+    updated = subprocess.run(
+        ["sh", str(INSTALLER), "update", "--yes", "--version", "v9.9.10"],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+
+    assert updated.returncode == 0, updated.stderr
+    assert "pi-beacon install-quickshell demo --force" in log.read_text()
+
+
+def test_installer_can_enable_opt_in_update_checks(tmp_path: Path) -> None:
+    environment, log = installer_environment(tmp_path)
+
+    installed = subprocess.run(
+        ["sh", str(INSTALLER), "install", "--yes", "--update-check"],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+
+    assert installed.returncode == 0, installed.stderr
+    commands = log.read_text()
+    assert "pi-beacon install-update-timer --force" in commands
+    assert "systemctl --user enable --now pi-beacon-update-check.timer" in commands
+    state = Path(environment["XDG_STATE_HOME"]) / "pi-beacon" / "installer-state"
+    assert "update_check=1" in state.read_text()
+
+    log.write_text("")
+    updated = subprocess.run(
+        ["sh", str(INSTALLER), "update", "--yes", "--version", "v9.9.10"],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+    assert updated.returncode == 0, updated.stderr
+    assert "pi-beacon install-update-timer --force" in log.read_text()
+    assert "update_check=1" in state.read_text()
+
+    log.write_text("")
+    disabled = subprocess.run(
+        ["sh", str(INSTALLER), "update", "--yes", "--no-update-check"],
+        env=environment,
+        capture_output=True,
+        text=True,
+    )
+    assert disabled.returncode == 0, disabled.stderr
+    assert "systemctl --user disable --now pi-beacon-update-check.timer" in log.read_text()
+    assert "update_check=0" in state.read_text()
 
 
 def test_uninstall_preserves_config_and_cache_by_default(tmp_path: Path) -> None:
@@ -199,9 +270,17 @@ def test_purge_removes_data_and_only_installer_managed_qml(tmp_path: Path) -> No
     assert not (runtime_home / "pi-beacon").exists()
     assert unrelated.is_file()
     assert not (qml_dir / "PiBeaconPanel.qml").exists()
+    assert not (qml_dir / "PiBeaconOverview.qml").exists()
+    assert not (qml_dir / "PiBeaconActivity.qml").exists()
+    assert not (qml_dir / "PiBeaconActivityNode.qml").exists()
+    assert not (qml_dir / "PiBeaconModels.qml").exists()
     assert not (qml_dir / "PiBeaconTheme.qml").exists()
     assert not (qml_dir / "PiBeaconServiceMenu.qml").exists()
     assert not (second_qml_dir / "PiBeaconPanel.qml").exists()
+    assert not (second_qml_dir / "PiBeaconOverview.qml").exists()
+    assert not (second_qml_dir / "PiBeaconActivity.qml").exists()
+    assert not (second_qml_dir / "PiBeaconActivityNode.qml").exists()
+    assert not (second_qml_dir / "PiBeaconModels.qml").exists()
     assert not (second_qml_dir / "PiBeaconTheme.qml").exists()
     assert not (second_qml_dir / "PiBeaconServiceMenu.qml").exists()
     assert "local data were removed" in removed.stdout

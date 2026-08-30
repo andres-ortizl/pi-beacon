@@ -6,14 +6,13 @@ Install the maintained component into an existing Quickshell configuration:
 pi-beacon install-quickshell YOUR_CONFIG_NAME
 ```
 
-Then instantiate `PiBeaconPanel` from that configuration. The component is self-contained and exposes its palette, font, placement, refresh interval, recent-session limit, and section visibility as public properties.
+Then instantiate `PiBeaconPanel` from that configuration. The installer copies the panel with its `Overview`, `Activity`, and `Models` view components; keep those sibling QML files together. The panel exposes its palette, font, placement, refresh interval, recent-session limit, and section visibility as public properties.
 
 ```qml
 PiBeaconPanel {
     fontFamily: "JetBrainsMono Nerd Font"
     panelColor: "#ee1e1e2e"
     surfaceColor: "#4d414558"
-    accentColor: "#9580ff"
     topMargin: 78
     rightMargin: 12
     recentLimit: 3
@@ -58,7 +57,7 @@ PiBeaconPanel {
 }
 ```
 
-The installed QML is readable source. Every section can be removed or reshaped. It keeps one `pi-beacon-stream --format snapshot` process open while the panel is visible and consumes versioned SSE updates from the private local service.
+The installed QML is readable source. Every section can be removed or reshaped. The header and tabs stay fixed while the body scrolls. Press Escape or click outside the panel to close it. It keeps one `pi-beacon-stream --format snapshot` process open while the panel is visible and consumes versioned SSE updates from the private local service. A cached update check appears as a small header badge; the panel never performs the network request itself.
 
 The component registers an IPC target:
 

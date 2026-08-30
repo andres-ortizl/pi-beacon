@@ -21,6 +21,47 @@
       <h1>Changelog</h1>
       <article class="release-card">
         <header>
+          <h2>Version 1.1.0</h2>
+          <p>Activity hierarchy, model analytics and a polished dashboard</p>
+        </header>
+        <h3>Added</h3>
+        <ul>
+          <li>Overview, Activity and Models dashboard views.</li>
+          <li>
+            Parent-session execution trees with nested subagents and explicit
+            unattached-agent handling.
+          </li>
+          <li>
+            Seven-day daily cost history and per-response model rankings for
+            cost, tokens, responses and sessions.
+          </li>
+          <li>
+            Manual update commands, an opt-in daily release timer and a cached
+            dashboard update badge.
+          </li>
+          <li>
+            Retained SQLite aggregates with migration and safe rebuilds after
+            rewrites or retention changes.
+          </li>
+        </ul>
+        <h3>Changed</h3>
+        <ul>
+          <li>
+            Reworked the Zen dashboard with fixed navigation, consistent
+            spacing, clearer typography and the Pi Beacon green accent.
+          </li>
+          <li>
+            Replaced ambiguous daily cost columns with labelled horizontal bars
+            and improved scroll affordances.
+          </li>
+          <li>
+            Updates now refresh every Quickshell configuration recorded by the
+            installer while preserving config and cache.
+          </li>
+        </ul>
+      </article>
+      <article class="release-card">
+        <header>
           <h2>Version 1.0.0</h2>
           <p>First stable release</p>
         </header>

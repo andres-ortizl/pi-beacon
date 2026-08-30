@@ -1,0 +1,15 @@
+[Unit]
+Description=Check for Pi Beacon updates
+Documentation=https://github.com/andres-ortizl/pi-beacon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/pi-beacon update --check
+UMask=0077
+NoNewPrivileges=true
+LockPersonality=true
+PrivateDevices=true
+PrivateTmp=true
+RestrictSUIDSGID=true

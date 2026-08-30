@@ -70,7 +70,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         finally:
             await collector.close()
 
-    app = FastAPI(title="Pi Beacon", version="1.0.0", lifespan=lifespan)
+    app = FastAPI(title="Pi Beacon", version="1.1.0", lifespan=lifespan)
     app.add_middleware(RevisionHeaderMiddleware, revision=lambda: collector.revision)
     v1 = APIRouter(prefix="/v1")
 

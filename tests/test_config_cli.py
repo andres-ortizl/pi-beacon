@@ -11,8 +11,10 @@ from typing import TypedDict
 import pytest
 from typer.testing import CliRunner
 
+import pi_beacon.cli as cli_module
 from pi_beacon.cli import app
 from pi_beacon.config import PathSettings, Settings, load_settings
+from pi_beacon.models import UpdateStatus
 from pi_beacon.paths import ensure_runtime_root, live_sessions_dir
 
 runner = CliRunner()
@@ -94,6 +96,35 @@ def test_waybar_and_snapshot_commands(tmp_path: Path, monkeypatch) -> None:
     assert snapshot.exit_code == 0
     assert json.loads(snapshot.stdout)["version"] == 1
 
+    version = runner.invoke(app, ["version"])
+    assert version.exit_code == 0
+    assert version.stdout.strip() == "1.1.0"
+
+
+def test_update_check_command_writes_dashboard_status(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database = tmp_path / "cache" / "sessions.sqlite3"
+    monkeypatch.setenv("PI_BEACON_PATHS__DATABASE", str(database))
+    monkeypatch.setattr(
+        cli_module,
+        "check_for_update",
+        lambda: UpdateStatus(
+            current_version="1.0.0",
+            latest_version="1.1.0",
+            available=True,
+            release_url="https://example.test/releases/v1.1.0",
+        ),
+    )
+
+    result = runner.invoke(app, ["update", "--check"])
+
+    assert result.exit_code == 0
+    assert "Update available" in result.stdout
+    payload = json.loads(database.with_name("update.json").read_text())
+    assert payload["latestVersion"] == "1.1.0"
+
 
 def test_asset_installers(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
@@ -104,6 +135,10 @@ def test_asset_installers(tmp_path: Path, monkeypatch) -> None:
     qml = runner.invoke(app, ["install-quickshell", "demo"])
     assert qml.exit_code == 0
     assert (tmp_path / "quickshell" / "demo" / "PiBeaconPanel.qml").is_file()
+    assert (tmp_path / "quickshell" / "demo" / "PiBeaconOverview.qml").is_file()
+    assert (tmp_path / "quickshell" / "demo" / "PiBeaconActivity.qml").is_file()
+    assert (tmp_path / "quickshell" / "demo" / "PiBeaconActivityNode.qml").is_file()
+    assert (tmp_path / "quickshell" / "demo" / "PiBeaconModels.qml").is_file()
     assert (tmp_path / "quickshell" / "demo" / "PiBeaconTheme.qml").is_file()
     assert (tmp_path / "quickshell" / "demo" / "PiBeaconServiceMenu.qml").is_file()
 
@@ -117,6 +152,13 @@ def test_asset_installers(tmp_path: Path, monkeypatch) -> None:
     )
     assert service.exit_code == 0
     assert "pi-beacon serve" in service_target.read_text()
+
+    update_timer = runner.invoke(app, ["install-update-timer"])
+    assert update_timer.exit_code == 0
+    update_service_path = tmp_path / "systemd" / "user" / "pi-beacon-update-check.service"
+    update_timer_path = tmp_path / "systemd" / "user" / "pi-beacon-update-check.timer"
+    assert "pi-beacon update --check" in update_service_path.read_text()
+    assert "OnUnitActiveSec=24h" in update_timer_path.read_text()
 
 
 @pytest.mark.parametrize("config_name", [".", "..", "../outside"])
@@ -183,6 +225,9 @@ def test_serve_uses_granian_uvloop_and_the_configured_unix_socket(
     result = runner.invoke(app, ["serve", "--config", str(config)])
 
     assert result.exit_code == 0
+    assert "file" in executed
+    assert "args" in executed
+    assert "environment" in executed
     assert executed["file"] == sys.executable
     assert "--loop" in executed["args"]
     assert "uvloop" in executed["args"]
