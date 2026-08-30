@@ -8,6 +8,8 @@
 
 Live Pi session and subagent observability for Linux desktops.
 
+**[Website](https://andres-ortizl.github.io/pi-beacon/)** · **[Documentation](docs/)** · **[Install](#installation)**
+
 Pi Beacon turns Pi's in-process state, session logs, and `pi-subagents` lifecycle artifacts into one versioned local snapshot. It ships a Waybar indicator and a configurable Quickshell dashboard.
 
 Inspired by the local-first analytics approach in [phun333/pi-infobar](https://github.com/phun333/pi-infobar), with a Linux-first live bridge instead of a native macOS or Windows application.
