@@ -62,7 +62,7 @@
             "name": "Does Pi Beacon upload session data?",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "No. Pi Beacon reads local Pi files and runtime state only."
+              "text": "No. Pi Beacon reads local Pi files and runtime state without uploading them. Optional release checks request only public version metadata from GitHub."
             }
           },
           {
@@ -377,13 +377,13 @@ local SSE     →  any frontend</code></pre>
             <span>Open the interactive installer</span>
             <code
               >curl -fsSL
-              https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh
+              https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.1.0/install.sh
               | sh</code
             >
             <button
               class="copy-button"
               type="button"
-              data-copy="curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh | sh"
+              data-copy="curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.1.0/install.sh | sh"
             >
               Copy
             </button>
@@ -392,8 +392,10 @@ local SSE     →  any frontend</code></pre>
         <p class="install-note">
           The same script installs and uninstalls Pi Beacon. It detects
           Quickshell, asks which configuration to use, preserves local data by
-          default and requires explicit confirmation before purge. Automation
-          flags remain available through <code>--help</code>.
+          default and requires explicit confirmation before purge. Later,
+          <code>pi-beacon update</code> installs the newest release and
+          refreshes every tracked integration. Automation flags remain available
+          through <code>--help</code>.
         </p>
       </section>
 
@@ -408,9 +410,10 @@ local SSE     →  any frontend</code></pre>
           <details>
             <summary>Does Pi Beacon upload session data?</summary>
             <p>
-              No. It reads local Pi files and runtime state. It has no
-              telemetry, opens no TCP port and serves only a private Unix
-              socket.
+              No. It reads local Pi files and runtime state without uploading
+              them. It has no telemetry, opens no TCP port and serves only a
+              private Unix socket. Optional release checks request only public
+              version metadata from GitHub.
             </p>
           </details>
           <details>

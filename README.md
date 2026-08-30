@@ -26,33 +26,43 @@ Inspired by the local-first analytics approach in [phun333/pi-infobar](https://g
 - Versioned HTTP, JSON, JSON Schema, and SSE contracts for custom frontends.
 - Persistent Granian and uvloop service on a private Unix socket.
 - Configurable Quickshell panel and Waybar module with no periodic process spawning.
-- Local-only operation. No telemetry or TCP listener.
+- Local-only observability with no telemetry or TCP listener.
+- Manual updates and an optional, explicit daily release check.
 
 ## Installation
 
 Run the interactive installer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.1.0/install.sh | sh
 ```
 
-Choose Install/Update or Uninstall. The script adds `uv` when required, installs the backend and version-pinned Pi extension, configures the user service, detects Quickshell, and asks which local data to preserve. It never uses `sudo`. Restart Pi or run `/reload` after installation.
+Choose Install/Update or Uninstall. The script adds `uv` when required, installs the backend and version-pinned Pi extension, configures the user service, detects Quickshell, and asks whether to enable the optional daily release check. It never uses `sudo`. Restart Pi or run `/reload` after installation.
 
 For the safer inspect-then-run path:
 
 ```bash
 curl -fsSLo /tmp/pi-beacon-install.sh \
-  https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.0.0/install.sh
+  https://raw.githubusercontent.com/andres-ortizl/pi-beacon/v1.1.0/install.sh
 less /tmp/pi-beacon-install.sh
 sh /tmp/pi-beacon-install.sh
 ```
 
-Use `sh install.sh --help` for non-interactive automation flags such as `--yes`, `--version`, `--quickshell`, and `--purge`.
+Use `sh install.sh --help` for non-interactive automation flags such as `--yes`, `--version`, `--quickshell`, `--update-check`, and `--purge`. Updates reuse every Quickshell configuration recorded by the installer.
 The service uses one Granian ASGI worker with uvloop. It listens only on the private Unix socket `$XDG_RUNTIME_DIR/pi-beacon/api.sock`.
+
+Check or install a release later with:
+
+```bash
+pi-beacon update --check
+pi-beacon update
+```
+
+The update command downloads the complete installer from the exact release tag before executing it. Configuration, cache, and tracked Quickshell integrations are preserved.
 
 ### Quickshell
 
-Copy the maintained component into an existing Quickshell configuration:
+Copy the maintained Quickshell dashboard components into an existing configuration:
 
 ```bash
 pi-beacon install-quickshell YOUR_CONFIG_NAME
@@ -64,7 +74,6 @@ Instantiate it from that configuration:
 PiBeaconPanel {
     fontFamily: "JetBrainsMono Nerd Font"
     panelColor: "#ee1e1e2e"
-    accentColor: "#9580ff"
     topMargin: 78
     rightMargin: 12
 }
@@ -111,6 +120,9 @@ pi-beacon-stream --format waybar
 pi-beacon waybar                 # One-shot compatibility payload
 pi-beacon snapshot --pretty      # One-shot compatibility snapshot
 pi-beacon doctor                 # Resolved paths and input availability
+pi-beacon version                # Installed release
+pi-beacon update --check         # Check and cache the latest release
+pi-beacon update                 # Confirm and install the latest release
 pi-beacon database-upgrade       # Apply pending Alembic migrations
 pi-beacon notify settled --project demo --duration 12
 pi-beacon init-config            # Install ~/.config/pi-beacon/config.toml
@@ -218,7 +230,7 @@ Tests enforce at least 85% Python coverage. Biome owns JavaScript, TypeScript, J
 
 ## Privacy
 
-Pi Beacon reads local Pi session files and local runtime state. It does not upload data or open a TCP listener. The API uses a mode `0600` Unix socket inside a mode `0700` user runtime directory. Live bridge files use the same private runtime root and are removed during normal Pi shutdown. The SQLite cache stores bounded operational metadata, not transcript bodies.
+Pi Beacon reads local Pi session files and local runtime state. It does not upload session data, use telemetry, or open a TCP listener. The API uses a mode `0600` Unix socket inside a mode `0700` user runtime directory. Live bridge files use the same private runtime root and are removed during normal Pi shutdown. The SQLite cache stores bounded operational metadata, not transcript bodies. Manual update checks, and the disabled-by-default update timer when explicitly enabled, send only a release metadata request to GitHub. Update status is cached locally for the dashboard.
 
 ## License
 
